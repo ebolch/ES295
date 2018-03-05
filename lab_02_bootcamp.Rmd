@@ -1,0 +1,1676 @@
+---
+title: 'Lab 2: R Bootcamp'
+author: "ES ___ "
+date: 
+output:
+  html_document:
+    toc: yes
+---
+# Overview
+
+R is a command-line interface that forces you to program your own analyses in a script. While this can be initimidating at first, it pays quickly to learn how to script your analyses when you have to redo your analysis if you discover a mistake, provide documentation, transparency and reproducibility of analyses, perform similar workflows, or perform batch prcessing. 
+
+On the surface, this lab appears long with a lot of homework questions. **Don't freak out!** Consider this your crash course in learning R as a programming language. It is a little like when you took a foreign language in high school, and the first couple of weeks you spent all your time memorizing vocabulary and conjugations. This is what we are doing here. Take your time, and go through all of the steps. Make sure you can answer all of the questions, and the logic behind it makes sense. If you can get comfortable with the material in this lab, you will soon be ready to start analyzing real data with R!
+
+## How These Tutorials Work
+Because we are working with open source software, there are far more useful and varied examples online than we can possibly cover in this class. Part of learning open source software is by reading different turorials, blog posts, and other resources. I will post required and suggested reading, but you should consider these as springboards only. With a little bit of internet research, you can acheive far more than what these basic tutorials cover.
+
+Sometimes I will give you instruction and examples in these tutorials, and sometimes I will point you to other online tutorials that you will have to complete. Note the learning objectives for each tutorial. These will be part of the overall course objectives, and will be covered in exams. 
+
+## Homework Assignments
+For each homework assignment I will ask you document your code using notebooks in R markdwon.
+
+In each section, if the text is
+
+><span style="color:CRIMSON;">CRIMSON like
+this it indicates a prompt for a question that you *must* answer or a product you must turn in for your homework. Crimson blocks of text are action items for you!</span> 
+
+# Objectives  
+After this tutorial, you should be able to:  
+
+* Launch R and R Studio
+* Define an IDE and explain why it is useful to use one
+* Use basic R syntax
+* Use basic few functions
+* Describe the benefits in scripting for data analysis
+* Explain the concepts of objects and assignment  
+* Explain the concepts of vector and data types  
+* Describe why you would or would not use factors  
+* Perform common vector operations  
+* Create matrices and perform common matrix operations  
+* Get in-program help  
+* Be able to set the `R` working directory  
+* Know the difference between full, base and relative paths  
+* Be able to write out both full and relatve paths for a given file directory  
+* Install a `R` package 
+* Write, or define a for loop, a while loop, and a repeat loop
+* Use Boolean operators
+* Write, or define a nested loop
+* Describe what vectorization is, and describe the tradeoffs between using loops versus vectorized solutions.
+* Quantify the execution time for a loop solution and a vectorized solution
+* Explain why we should divide programs into small, single-purpose functions. 
+* Use a function that takes parameters (input values)
+* Return a value from a function
+* Set default values for function parametrs 
+* Write, or define, a function
+* Use the `apply` family for vectorized solutions
+
+
+
+# Installing Packages
+
+Before we delve further into `R`, it's time to install our first "add-on" package for `R`. Packages are found from a few major repositories, the largest is `CRAN`: <http://cran.r-project.org/>
+Packages are installed in a specific directory (or directories), but are generally not loaded at startup to save memory space and deal with potential cross-package problems that pop up from time to time. To see what is currently LOADED:
+```{r}
+?path.package
+path.package() # These are the default packages that are loaded by R.
+```
+If you have already installed a package (e.g. "MASS"), you simply use the library() function:
+```{r}
+?library
+library("MASS") # Note that the quotes, in this case, are not actually required.
+```
+If you want to install a package that you don't currently have, you will use:
+`?install.packages`
+`install.packages()` 
+With no parameters, you will probably first be asked to pick a CRAN mirror. Choose one that is nearby-ish. Next, you will see a list of packages that are available through CRAN. Scroll down and find `raster`.  Click it, and click `OK`.  You will see it download and install.  
+
+Note that if you already know the name of the package, you can avoid the long list and simply do: `install.packages("raster")`. In this case, quotes are required.
+
+You can get an overview of the package info as well as available functions by:
+```{r}
+library(help="raster")
+# You can also see the main help page for the package by:
+help(package="raster")
+```
+
+If the package is NOT loaded yet, the shortcut for help require an additional parameter. Try typing: 
+`?brick` to obtain help for a function that is in the raster package.  
+
+Notice this doesn't work.  Try instead:
+`help("brick",package=raster)`
+
+If we load the library (do this now, we are going to use it):
+`library("raster")`
+we no longer need to specify `package=raster`:
+`?brick` should now work.  Verify the package is loaded:
+```{r}
+path.package() 
+```
+
+# Obtaining Help in R
+
+All functions come with a help screen. These help screens are very handy, as they provide information on what the function does, how it works, and usually sample examples at the very bottom. You can use `help()`, or simply `??()`.
+
+```{r}
+# call up a help search
+help.start()
+# documentation for a package 
+??ggplot2
+# help for a function
+?sum()
+```
+><span style="color:CRIMSON;">1. Using the help documentation, provide an alternative useage for the function `ncol()`</span>
+
+Sometimes we have some weird characters/functions we want to get help for, for instance try typing:
+
+`?for`
+
+Oops, now we've started a for loop.  Go ahead and force an error by typing:
+
+`{}`
+
+We can use quotes for functions that don't behave well with the help command:
+```{r}
+?"for"
+# also, our modulo operator causes a similar problem:
+# ?%% # doesn't work, but:
+?"%%" # does.
+```
+
+All this is fine if we know the name of the function, but what if we don't know what function to use for something, e.g. to determine a multivariate normal distribution?  We use `help.search()`
+```{r}
+help.search("multivariate normal")
+# or the shortcut ??
+??"multivariate normal"
+```
+Notice it found the `mvrnorm()` function, in the package `MASS`. 
+The help documentation is not perfect. But, R is ever changing, so learning how to use the help is key to keeping up with user contributions and applying them to your analyses!
+
+# Data Types and Structures
+In order to really use the R language effectively, it is critical that you understand basic data types and structures and the common operations you can perform on them. Afterall, these are the objects you will deal with on a day-to-day basis in R. Object conversions is a common source of frustration for R beginners. 
+
+## An overview of R data structures
+First, remember that *everything* in R is an **object**. There are different types of objects that can be categorized based on their data structures, or how the data are stored.
+
+R data structures include:
+
+* atomic vector  
+* list  
+* matrix  
+* data frame  
+* array  
+
+Data structures vary based on their dimensionality and how they handle heterogenous versus homogenous data.
+
+Dimensions  | Homogenous    |  Heterogenous
+----------  | ----------    |  ------------
+1-D         | atomic vector |  list
+2-D         | matrix        |  data frame
+none        | array         |  N/A
+
+# Vectors
+**(Not to be confused with GIS vectors!)**
+A vector is the most basic data structure in R. There are 2 types:
+
+* atomic vectors - holds homogenous data (data of a single type)
+* lists-hold hetergenous data 
+
+Vectors have 3 common properties:
+
+* Type-what it is `typeof()`
+* Length-how many elements it contains `length()`
+* Attributes-any additional metadata `attributes()`
+
+## Atomic Vectors
+R has 6 atomic vector types
+
+* character e.g., `"a"` or `"meas"`
+* numeric e.g., `2`, or `11.07`
+* integer e.g., `2L` (the `L` tells R to store as integer)
+* logical e.g., `TRUE` and `FALSE`
+* complex e.g., `2+4i` (any complex number with real and imaginary parts)-these are uncommon
+* raw -very uncommon, used for bitstreams
+
+###Generating Vectors
+
+A scalar (an individual number), e.g.:
+```{r}
+myscalar=2
+myscalar
+```
+So in this example, `myscalar' is a ONE ELEMENT VECTOR.  There are no "true" scalars in R.  Thus, we can use vector index notation:
+```{r}
+myscalar[1]
+```
+Now, let's define an x vector:
+```{r}
+x <- c(5,12,13)
+```
+We can determine its length by:
+```{r}
+length(x)
+```
+And its mode (data type) by:
+```{r}
+mode(x)
+```
+We can define a single element character vector by using quote marks:
+```{r}
+y <- "abc"
+length(y)
+mode(y)
+```
+and a multiple element character vector using our friend c():
+```{r}
+z<-c("abc","29 88")
+length(z)
+mode(z)
+```
+Note that quote marks will result in a character, even if its a number, e.g.:
+```{r}
+w<-"28"
+mode(w)
+```
+
+#### Adding or deleting vector elements
+
+`c()` is the standard command for creating (concatenating) elements into a vector.
+```{r}
+x <- c(88,5,12,13)
+x
+```
+
+Let's insert a `168` after the `12` and before the `13` into the vector:
+```{r}
+x <- c(x[1:3],168,x[4])
+x
+```
+A few things happened here in the depths of the computer that are important to note. 
+First off, recognize that the variable named "x" is actually a "pointer" to data that is in memory, so the way this command works, is that it first creates the new 5-element vector based on the old 4-element vector `x`, and only afterwards does it re-point the variable named `x` to this new 5-element vector (and the old 4-element vector is effectively deleted from memory).This can be an important memory management technique, "overwriting" old variables with new ones to free up memory. However, recognize that for a brief moment in time, the 4- and 5- element vectors are both in memory.
+
+Note that if we had done:
+```{r}
+x <- c(88,5,12,13)
+y <- c(x[1:3],168,x[4])
+```
+We would now have two vectors stored in memory, the 4- and the 5- element one (since `x` was not
+"overwritten").
+
+><span style="color:CRIMSON;">2. Create and print a new vector, `w` that is a subset of the first 4 elements of vector `v`, where `v <- c(8:19)` </span>
+
+><span style="color:CRIMSON;">3. Create and print a new vector, `h` that is a subset of the middle 5 elements of vector `d`, where `d <- c(8:20)` </span>
+
+#### Obtaining the length of a vector
+
+Use the `length()` function:
+```{r}
+x <- c(1,2,4)
+length(x)
+```
+Length is important in looping.  This is not the most efficient way to do this, but does illustrate how lengths can be used:
+``` {r}
+for (i in 1:length(x))
+{
+	# Print the current element of x
+	print(x[i])
+}
+```
+Take a look at the vector produced that `i` loops through:
+```{r}
+1:length(x)
+```
+We'll look at the ":" command in a bit.
+What happens if we have an empty vector?
+```{r}
+x <- c()
+length(x)
+```
+This can cause problems in looping:
+```{r}
+1:length(x)
+```
+
+><span style="color:CRIMSON;">4. What is the length of vector `d` from above?</span>
+
+#### Generating vector sequences with `:` 
+
+`:` is an important operator, because it produces a vector of numbers in a regular sequence.
+```{r}
+5:8 # produces a vector ranging from 5 to 8, incremented by 1.
+5:1 # prodcues a vector ranging from 5 to 1, decremented by 1.
+```
+These are very common in for loops.  Try:
+```{r}
+x
+1:length(x)
+for(i in 1:length(x)) { print(x[i]) }
+```
+Order of operations is important with the `:` operator. `:` takes prescedence over arithmetic.
+```{r}
+i <- 3
+1:i-1 # Means create a vector of 1 to 3, and then subtract 1 from the vector, e.g. (1:i)-1 
+1:(i-1) # evaluates i-1 first, and then generates a sequence from 1 to 2
+```
+
+#### Generating vector sequences with `seq()`
+
+A more general form of `:` is the `seq()` function.
+```{r}
+?seq
+seq(from=1,to=5,by=1) 
+```
+is the same as
+```{r}
+1:5
+```
+But we have more custom control:
+```{r}
+seq(from=12,to=30,by=3)
+```
+the `to` number sets the maximum possible number of the sequence.  Try:
+```{r}
+seq(from=12,to=32,by=3)
+# We can also make non-integer sequences, and 
+seq(from=1.1,to=2,length=10)
+```
+Note that `by` is determined by: ((to - from)/(length - 1)), we could also do:
+```{r}
+seq(from=1.1,to=2,by=0.1)
+```
+
+### Types, Testing & Coercion of Vectors
+
+Given a vector, you can determine its type with `typeof()`, or check if it is a specific type using the family of "is" functions: `is.character()`, `is.double()`, `is.integer()`, `is.logical`, or, more generally, `is.atomic()`.
+```{r}
+#Make and test an integer vector
+my.int <- c(1L,2L,8L)
+typeof(my.int)
+is.integer(my.int)
+is.atomic(my.int)
+is.character(my.int)
+
+#Make and test a double vector
+my.dbl <- c(1.1,2.7,8.8)
+typeof(my.dbl)
+is.double(my.dbl)
+is.atomic(my.dbl)
+is.logical(my.dbl)
+```
+*Note!* `is.numeric()` is a general test for the 'numberliness" of a vector. It will return `TRUE` for both integer and double vectors. It isn't a specific test for double vectors (which are often called numeric).
+```{r}
+is.numeric(my.int)
+is.numeric(my.dbl)
+```
+><span style="color:CRIMSON;">5. What are the 3 properties of a vector, other than its contents?.</span> 
+
+#### Testing vector equality
+How can we test if these two vectors are identical?
+```{r}
+x <- 1:3
+y <- c(1,3,4)
+# We can just use ==, right?
+?"=="
+x == y
+```
+Wrong!  `==` is a vectorized function, so works element-wise.
+We can use this statement combined with `all()` to solve the problem, however:
+```{r}
+all(x==y)
+# Or we can use the identical() function:
+?identical
+identical(x,y)
+# Identical needs to be treated with care, because it checks more than just the values:
+x <- 1:2
+y <- c(1,2)
+x
+y
+identical(x,y) 
+```
+What's going on here?  Let's check the number types using `typeof()`
+```{r}
+?typeof
+typeof(x)
+typeof(y)
+```
+Ah ha! `:` produces integers and `c()` produces floating point numbers.
+
+#### Coercing Vectors
+All elements of an atomic vector must be the same type, so if you attempt to combine different types, R will **coerce** them to the most flexible type. From least to most flexible these are:
+*logical
+*integer
+*double
+*character
+For example, if you combine a character and an integer, you get a character
+```{r}
+z=c("a",3)
+z
+typeof(z)
+```
+><span style="color:CRIMSON;">6. Can you predict the output of the following uses of `c()`?
+`c(3,FALSE)`
+`c("a",1)`
+`c(4L,2)`
+</span> 
+
+When you coerce a logical vector into an iteger or a double, `TRUE` becomes `1` and `FALSE` becomes `0`. This can be super handy for doing summary statistics. For example:
+```{r}
+y <- c(FALSE,FALSE,TRUE)
+as.numeric(y)
+#Total number of TRUES
+sum(y)
+#Proportion of TRUES
+mean(y)
+```
+><span style="color:CRIMSON;">7. What are the 4 types of common atomic vectors? What are the 2 rare types?</span>
+
+Coercion usually happens automatically. Most mathematical operations (`+`, `log`, `abs`) will coerce to a double or integer and most logical operations (`&`,`|`,`any`) will coerce to logical. Usually R will give you a warning message if coercion will lead to lost information. However, if you think confusion is likely, explicitly coerce your vector yourself using `as.character()`, `as.double()`, etc...
+
+><span style="color:CRIMSON;">8. Why is `1=="1"` true? Why is `-1 < FALSE` true? Why is `"one< 2 ` false?</span>
+
+><span style="color:CRIMSON;">9. Why is the default missing value `NA`, a logical vector? What's so special about logical vectors? *Hint: think about* `c(FALSE,NA_character)`</span>
+
+### Indexing Vectors 
+We can extract subvectors of a source vector `vector1` by using an "index vector" `vector2` using this format: `vector1[vector2]`
+```{r}
+y <- c(1.2,3.9,0.4,0.12)
+y[c(1,3)] # Returns element 1 and 3 of y.
+y[2:4] # Returns elements 2 through 4 of y.
+# Duplicates are allowed!  
+x <- c(4,2,17,5)
+y <-x[c(1,1,3)]
+y
+```
+Negative subscripts are used to *exclude* elements:
+```{r}
+z <- c(5,12,13)
+z[-1] # exclude element 1
+z[-1:-2] # Exclude elements 1 through 2
+```
+Using length statements can sometimes help with indexing, and generalize the function. In this example, we want all but the last element in the vector. Note that no matter how long `z` is, this function will always return all be the last element.
+```{r}
+z <- c(5,12,13,2,3,4,5)
+z[1:(length(z)-1)] # Includes elements 1 through the second-to-last element
+# or
+z[-length(z)]
+```
+
+><span style="color:CRIMSON;">10. Provide the value of the last element in the result of the vector operation `d * 2` from the vectors defined above. </span>
+
+#### which()
+
+If we want the positions of the elements that satisfy the logical argument, we use `which()`
+```{r}
+?which
+z <- c(5,2,-3,8)
+which(z*z > 8) # This is the numerical index of z that satisfy the logical statement.
+# This is the longer version of above:
+z_index <- seq(z)
+z_index
+z_index[z*z > 8]
+```
+
+><span style="color:CRIMSON;">11. Create a vector `a` with a sequence of 11 elements in it ranging from 0.6 to 1.9. Create another, logical vector `b` that identifies which elements in `a` are *greater than or equal to* `1.1`. Print your results. </span>
+
+#### Vector names
+
+We can assign each element a name using `names()`, perhaps to use in plotting.
+```{r}
+?names
+x <- c(1,2,4)
+names(x) <- c("a","b","c")
+names(x)
+x
+# To remove names:
+names(x) <- NULL
+x
+```
+And we can reference using the names as indexes
+```{r}
+names(x) <- c("a","b","c")
+x["b"] # Be careful if you have duplicate names, this won't work right if you do.
+```
+
+### Filtering Vectors
+We can subset vectors in one of two ways:
+1. Using a vector of numeric (integer) elements, e.g.:
+```{r}
+z <- c(6,7,4,2)
+numeric_vector <- c(1,2)
+z[numeric_vector]
+# is the same as:
+z[c(1,2)]
+# is the same as:
+z[1:2]
+```
+
+2. We can also use logical vectors such that the elements are returnedif the element is true:
+```{r}
+logical_vector <- c(TRUE,TRUE,FALSE,FALSE)
+z[logical_vector]
+# Note that a logical vector must be the same
+# lengths as the vector it is indexing:
+length(logical_vector)==length(z)
+```
+
+We can use logical statements to filter out unwanted elements.
+A filtering index is a logical index the same length as a vector to be indexed.
+```{r}
+z <- c(5,2,-3,8)
+w <- z[z*z > 8]
+w
+```
+Let's look at this step by step:
+```{r}
+z
+z*z
+z*z > 8 # Note that the second element is FALSE, this is the filtering index.
+z[z*z > 8]
+```
+Here's a more complex example, where we use a filter generated from one vector and apply it to a different vector of the same length:
+```{r}
+z <- c(5,2,-3,8)
+j <- z*z > 8
+j
+y <- c(1,2,30,5)
+y[j] # Which is the same thing as...
+y[z*z > 8] 
+```
+A really powerful feature of this is selective assignment:
+```{r}
+x <- c(1,3,8,2,20)
+x[x > 3] # Returns the filtered x...  but what if we want to convert all those values to 0?
+x[x > 3] <- 0
+x # All values of x greater than 3 are now equal to 0!
+```
+
+><span style="color:CRIMSON;">12. Set all elements in vector `a` from above to `2.0` if they are *greater than or equal to* `1.1`. </span>
+
+Now, what if we have an NA?
+```{r}
+x <- c(6,1:3,NA,12)
+x
+x[x > 5] # oops, we still have that NA in there. 
+```
+Instead, we can use the `subset()` command which will remove NAs:
+```{r}
+?subset
+subset(x,x > 5)
+```
+
+#### ifelse()
+`if()` statements are non-vectorized, so can be slow. `ifelse()` provides a vectorized version of `if()`
+```{r}
+?ifelse
+x <- 1:10
+x
+x %% 2 == 0
+y <- ifelse(x %% 2 == 0,yes="even",no="odd")
+y
+```
+
+### Vector Operations
+
+Now, let's discuss some common vector operations.
+Try this:
+```{r}
+?"+"
+2+3
+```
+`+` is actually a function!  You can accomplish the same task in "function" form by:
+```{r}
+"+"(2,3)
+```
+Vector addition is performed element-wise:
+```{r}
+x <- c(1,2,4)
+x + c(5,0,-1)
+```
+Multiplication is also done element-wise:
+```{r}
+x*c(5,0,-1)
+```
+Other basic operators also are performed element-wise:
+```{r}
+x/c(5,4,-1)
+x %% c(5,4,-1) # Remember that %% is modulo, e.g. it returns the remainder of the division.
+```
+
+##Lists
+Unlike atomic vectors, lists can have elements of any type, including lists. You make a list using `list()` instead of `c()`:
+```{r}
+z <- list(1:5,"b",c(TRUE,FALSE),c(1.2,4.2,4.3))
+str(z)
+```
+Sometimes lists are called **recursive** vectors because a list can contain other lists. This makes them fundamentally different from atomic vectors. 
+```{r}
+y <- list(list(list(list())))
+str(y)
+is.recursive(y)
+```
+
+###Generating Lists
+`c()` combines several lists into one. If you give `c()` a combination of atomic vectors and lists, it will coerce them to lists before combining them.
+
+><span style="color:CRIMSON;">13. Use `str()` to compare the results of using `list()` and c`()` on `l` and `j` for: `l <-c(list(1,2),c(3,4))` and `j=list(list(1,2),c(3,4))` </span> 
+
+###Types, Testing & Coercion of Lists
+
+The `typeof()` a list is `list`. You can test for this using `is.list` and coerce to a list using `as.list`. You can turn a list into an atomic vector with `unlist()`. If the elements of a list have different types, the same coercion rules are `c()` are used.
+
+><span style="color:CRIMSON;">14. Show what happens when you use `unlist()` on `l` and `j`. </span>
+
+### Indexing Lists
+Now, let's define a list as containing a single element numeric vector, a 3-element character vector, and a matrix (don't worry, we will get to this in a minute):
+```{r}
+mylist <- list(u=2,v=c("abc","def"),w=matrix(data=c(1,2,3,4),nrow=2,ncol=2))
+```
+We can print the whole list out by:
+```{r}
+mylist
+```
+And we can access subelements of the list in two ways.  First, by using double brackets:
+```{r}
+mylist[[1]] # Prints the single-element numeric vector
+mylist[[3]] # Prints the matrix.
+```
+We can also access it by using the variable name and a dollar sign:
+```{r}
+mylist$v # Prints the v variable 
+mylist$w # Prints the w variable
+```
+A list is a good way to "package up" a bunch of variables to return from a function.
+Lists are used a lot in R to group together disparate types of data into a more tractable variable. For instance, let's output the histogram to a variable:
+```{r}
+hn <- hist(Nile)
+```
+
+Notice it shows you a plot, but we also have a histogram "object".  Let's look at it:
+```{r}
+hn
+```
+Lists can often be a lot of data to look at.  We can print it out more compactly:
+```{r}
+str(hn)
+```
+This variable is a list data structure, at its core.  
+We can look at just the counts of each bin using $:
+```{r}
+hn$counts  
+```
+
+### Applying functions to lists
+
+Start here:
+```{r}
+?sapply # Also will show the help for lapply
+```
+
+We will see below that `apply()` works on a matrix input, re-running a function over each dimension of a matrix.
+`lapply()` and `sapply()` are equivalents to apply, except they take list inputs. These are critically important functions to learn, and provide the basis for many parallel processing routines.
+```{r}
+z <- list(1:3,25:29)
+z 
+```
+Notice that the first and second components are different sizes, so we can't coerce these to a matrix and use apply.
+```{r}
+output <- lapply(X=z,FUN=median) # Applies median() to each list component, and returns the output in list form.  
+```
+Long-form, this did this:
+```{r}
+list(median(z[[1]]),median(z[[2]]))
+``` 
+Notice we could have written a for loop to accomplish this, but we'd have had a lot more coding to do:
+```{r}
+output <- vector(mode="list") # Make a blank list
+for(i in seq(z)) # Cycle through every element of z
+{
+	output[[i]]=median(z[[i]]) # set the output indexed to i to equal the median of z at index i.
+}
+output
+```
+`sapply()` is very similar to `lapply()`, but does a check to see if it can "simplify" the output: i.e. reduce it to a matrix or vector:
+```{r}
+sapply_out <- sapply(X=z,FUN=median)
+sapply_out
+class(sapply_out) # Output is an integer vector.
+lapply_out <- lapply(z,median)
+lapply_out
+class(lapply_out) # Output is a list.
+```
+THERE ARE PARALLEL VERSIONS OF BOTH SAPPLY AND LAPPLY.
+
+##Factors
+Factors are special vectors that represent categorical data. Factors can be ordered or unordered. They are important for modeling functions like `lm()` and `glm()`, and in `plot()` methods. Once created, factor can only contain pre-defined set values, known as **levels**.
+
+Factors are stored as integers that have labels associated with the unique integers. While factors look and often behave like character vectors, they are acutally integers. Be careful when you treat them as strings. Some string methods coerce factors to strings, while others will return an error. 
+
+Some factors can be left unordered, such as "male" or "female". Other factors might need to be ordered, such as "low", "medium", "and "high".
+
+><span style="color:CRIMSON;">15. If factors are essentially integers under the hood, why do we use them, and not just use integers (e.g., 1s and 2s instead of male, female)?</span>
+
+###Generating Factors
+
+Factors are created with `factor()`. 
+```{r}
+my.fac <- factor(c("yes", "yes","no","yes","yes","yes"))
+my.fac
+```
+`table()` will return a frequency table counting the number of elements in each level.
+
+><span style="color:CRIMSON;">16. Using `table()`, provide the frequency of no and yes in `my.fac`.</span>
+
+###Types, Testing & Coercion of Factors
+
+If you need to convert a factor to a character vector, use `as.character()`. To convert a factor to a numeric vector, go via character. Compare:
+```{r}
+f <- factor(c(1,2,5,8))
+as.numeric(f) ##wrong!
+as.numeric(as.character(f))
+```
+
+Often when you read data into R, it automatically converts character vectors to factors. Use the argument `stringsAsFactors=FALSE` to avoid this behavior, and then convert your characters vectors to factors yourself as needed.   
+
+Sometimes when you read in data using R, a column you thought would produce a numeric vector instead produces a factor. This is caused having a missing value encoded in a special way like `-`. You can remedy this by also converting the vector after reading in the data, but it is better to identofy the problem and remedy it in the reading data portion. The `na.strings` argument in `read.csv()` is a good place to start.
+
+><span style="color:CRIMSON;">17. What does this R code below do? How are `f1` and `f2` different from `f3`? </span>
+
+```{r}
+f1 <- factor(letters)
+levels(f1) <-rev(levels(f1))
+f2 <- rev(factor(letters))
+f3 <- factor(letters, levels=rev(letters))
+```
+
+###Applying functions to factors
+
+`tapply()`, used with vectors, allows us to apply functions on a per-level basis
+```{r}
+?tapply
+```
+For instance, say we want to calculate the mean age of people from different political parties:
+```{r}
+ages <- c(25,26,55,37,21,42)
+affils <- c("R","D","D","R","U","D") # (D)emocrat, (R)epublican, (U)naffiliated
+tapply(X=ages,INDEX=affils,FUN=mean)
+```
+What this did was for each level in affils, it calculated the mean value of ages that were equal to that particular factor, e.g.:
+```{r}
+mean(ages[affils=="D"])
+mean(ages[affils=="R"])
+mean(ages[affils=="U"])
+```
+`tapply()` can work with multiple factors.  Here is a more complex example:
+```{r}
+d <- data.frame(gender=c("M","M","F","M","F","F"),
+		age=c(47,59,21,32,33,24),
+		income=c(55000,88000,32450,76500,123000,45650))
+d
+# Let's make a categorical variable if someone is over 25:
+d$over25 <- ifelse(d$age > 25, 1, 0)
+d
+# Now, we want to see the mean income for four groups:
+#  Males under 25, males over 25, females under 25, females over 25:
+tapply(X=d$income,INDEX=list(d$gender,d$over25),mean)
+```
+Notice that tapply figured out there were 4 groups, given the 2 factors (`gender` and `over25`).
+
+# Matrices and Arrays
+
+Matrices are commonly used as part of the mathematics underlying much of statistics. Arrays are a little more rare. 
+
+A matrix is, technically, a vector that has two additional attributes: number of rows and number of columns. The restrictions on a matrix are the same as a vector: all the elements must be the same type (e.g. integer, numeric, or character). 
+
+## Generating Matrices
+
+Matrices, remember, are vectors that have additional attributes, namely the number of rows and columns in the matrix. R also supports multidimensional arrays, e.g. a 3-d array (rows, columns, layers).
+
+One way to make a matrix is using the `matrix` function:
+```{r}
+mymatrix <- matrix(data=c(1,3,5,8),nrow=2,ncol=2)
+mymatrix
+```
+We could also use the "row bind" function to "stack" two vector "rows" together:
+```{r}
+mymatrix2 <- rbind(c(1,4),c(2,2))
+mymatrix2
+```
+
+Matrices are created in "column-major order", so all of column 1 is stored first, then column 2, etc.  Note that raster images tend to be row-major ordered, so row 1 is stored first, then row 2, etc...  
+
+```{r}
+?matrix
+```
+Shortcuts with variable names:
+Notice from the help that the first parameter you can pass to `matrix()` is `data=`.  If you don't specify variable names in function calls, R will assume you are calling the variables in order:
+```{r}
+y <- matrix(c(1,2,3,4),ncol=2,2) 
+y <- matrix(data=c(1,2,3,4),ncol=2,nrow=2) 
+```
+
+R knows the first parameter of the function `matrix()` is `data`, so it assumes the
+vector in the first position should be assigned to `data=` without needing to explictly define it.
+```{r}
+y 
+```
+Notice that 1:4 filled in column by column. R will figure out the number of columns you need if you only specify `nrow`:
+```{r}
+y <- matrix(data=c(1,2,3,4),ncol=2) # It figures out the ncol by length(data)/nrow
+y[,2] # shows us everything in column 2 (notice it prints out in vector format)
+```
+We can fill in a matrix element-by-element by first defining an empty matrix:
+```{r}
+y <- matrix(nrow=2,ncol=2)
+y # As with empty vectors, an empty matrix defaults to mode(y) == logical, 
+# but will switch to the mode of the first element we assign.
+y[1,1] <- 1
+y[2,1] <- 2
+y[1,2] <- 3
+y[2,2] <- 4
+y
+```
+Notice that we CAN fill in a matrix row-by-row (like an image) by using the byrow=TRUE parameter:
+```{r}
+m <- matrix(1:6,nrow=2,byrow=TRUE)
+m
+```
+
+### Adding and deleting matrix rows and columns
+We can change the size of a matrix using `rbind()` (row bind) and `cbind` (column bind)
+```{r}
+?rbind
+?cbind
+```
+For example, say we want to add a vector of 1s to a 4 x 4 matrix:
+```{r}
+ones = rep(1,4)
+ones
+z <- matrix(seq(10,160,by=10),nrow=4,ncol=4)
+z
+# We can add the row of ones to the bottom:
+rbind(z,ones) 
+# Or to the top:
+rbind(ones,z)
+# Or along the left column:
+cbind(ones,z)
+# Or the right column:
+cbind(z,ones)
+```
+We can reassign ("overwrite") z to have the new column at the right by:
+```{r}
+z <- cbind(z,ones)
+z
+```
+Remember that momentarily both the old `z` (4x4) and the new `z` (4x5) are held in memory
+
+We can delete rows and columns by just using our subscripts:
+```{r}
+z[,1:4] # Clip off the 5th column
+# We can reassign it by:
+z <- z[,1:4]
+z
+```
+
+## Indexing Matrices
+
+Remember we can index a vector by using a single value, e.g.:
+```{r}
+x 
+x[1]
+```
+A matrix has two dimensions, so we need to use two values to index it:
+```{r}
+mymatrix
+mymatrix[1,2]
+```
+
+**A WORD OF WARNING:** R matrices are called in the order row,column.  This is the OPPOSITE of geographic data, in which we usually call data by: column (easting), row (northing).  This may come back to confuse us later, so just be aware of this.  This is known as COLUMN-MAJOR ordering of matrices.
+
+We can extract submatrices by not defining a specific element, e.g.:
+```{r}
+mymatrix[1, ] # Prints row 1, all columns of mymatrix
+mymatrix[ ,2] # Prints all rows, column 2 of mymatrix
+```
+
+><span style="color:CRIMSON;">18. If `is.matrix(x)` is `TRUE`, what will `is.array(x)` return?</span>
+
+```{r}
+y<-matrix(1:12*3,nrow=4,ncol=3)
+y
+```
+Matrix indexing functions much the same as vectors, except we now have two dimensions (separated by a comma) to deal with. So:
+```{r}
+y[ ,2:3] # Means return all rows for columns 2 through 3
+y[2:3, ] # Means return all columns for rows 2 through 3
+y[2:3,2] # Means return column 2 for rows 2 through 3
+# Negative subscripts mean "exclude" just like in vectors:
+y[-2,] # Return all columns of all rows EXCEPT row 2
+```
+We can perform assignments using row indices as well:
+```{r}
+y<-matrix(1:6,nrow=3,ncol=2)
+y
+y[c(1,3), ] # Return all columns of rows 1 and 3. 
+matrix(c(1,1,8,12),nrow=2)
+y[c(1,3),] <- matrix(c(1,1,8,12),nrow=2)
+```
+
+## Filtering Matrices
+
+```{r}
+x <- matrix(c(1,2,3,2,3,4),nrow=3,ncol=2)
+x[x[,2] >= 3,] # Only returns rows where the second column entry is >= 3
+# Breaking this down:
+x
+x[ ,2]
+x[,2] >= 3
+j <- x[,2] >= 3
+x[j,] # This is a vectorized operation (fast)
+```
+
+###Logical `&` Statement
+Here's a more complex operation that introduces us to a logical AND statement
+```{r}
+?"&"
+```
+There are different logical statements such as: AND `&` which is `TRUE` only if both statements are `TRUE`. Try it out:
+```{r}
+TRUE & FALSE
+TRUE & TRUE
+FALSE & FALSE
+```
+`&` is a vectorized (element-by-element) operator. So:
+```{r}
+c(TRUE,TRUE,FALSE) & c(TRUE,FALSE,FALSE)
+m <- matrix(1:6,nrow=3)
+m
+m[m[,1] > 1 & m[,2] > 5,]
+# Take a second to break down the different components of this to understand what is going on.
+m[,1] > 1
+m[,2] > 5
+m[,1] > 1 & m[,2] > 5
+m
+m[m[,1] > 1 & m[,2] > 5,]
+```
+
+## Matrix Operations
+
+Basic (and advanced) linear algebra operations are available in R and are optimized for speed (and may even use parallel execution depending on how you configured/installed R).
+```{r}
+y <- matrix(c(1,2,3,4),nrow=2,ncol=2) 
+# Left scalar multiplication:
+3 * y
+# Matrix multiplication (refer to your linear algebra textbooks for the description):
+?"%*%"
+y %*% y
+# Element-wise multiplication:
+y*y
+# Element-wise addition:
+y+y
+```
+
+###Your first remote sensing function
+Matrix notation allows us to interact with raster files.  
+First, let's load up the raster package:
+```{r}
+library("raster")
+```
+Next, we are going to use one of the built-in datasets
+```{r}
+filename <- system.file("external/test.grd", package="raster")
+filename # Returns the path to a sample raster image.
+```
+We can create a raster object (a raster with 1-layer) by:
+```{r}
+r <- raster(filename)
+# Note, we'll learn a lot more about the raster package later in the class...
+r # Note it gives you info about the raster object. 
+class(r)
+```
+Let's look at the raster:
+```{r}
+plot(r)
+```
+
+Rasters are basically matrices, and use some of the same basic notation. So, for instance, we can re-assign certain values:
+
+```{r}
+r[75:100,1:10] <- 1500 
+plot(r)
+```
+
+We can "reload" the raster from disk and modify it a different way:
+
+```{r}
+r <- raster(filename)
+r[75:100,1:10] <- r[75:100,1:10]*10 # Multiply the values in this subset by 10.
+plot(r)
+```
+
+**Note!** A raster object is not identical to a matrix, so some matrix command won't work the same on a raster as they will on an R matrix.  We'll learn more about rasters later.
+
+## Applying functions to matrices
+
+`apply()` is a very powerful tool for use with matrices. It allows an easy  way to apply a function on a row-by-row, or column-by-column basis.
+
+```{r}
+?apply
+```
+
+The general form is as follows:
+`apply(X,MARGIN,FUN,...)`
+Where:
+`X` is a matrix or array
+`MARGIN` is the dimension to use (1 = row by row, 2 = column by column)
+`FUN` is a function to be applied
+`...` are addition arguments that will be passed to the function.
+
+So, say we want to calculate the mean for each column in a matrix:
+```{r}
+z <- matrix(1:6,nrow=3) 
+z
+apply(X=z,MARGIN=2,FUN=mean)
+```
+This is the same as:
+```{r}
+zmean <- vector(length=ncol(z))
+for(i in seq(ncol(x)))
+{
+	zmean[i] <- mean(z[,i])
+}
+zmean
+```	
+
+With `apply(), we can define our own function:
+```{r}
+f <- function(x) { x/c(2,8) }
+y <- apply(X=z,MARGIN=1,FUN=f)
+y
+```
+Note, when testing functions to use with apply, it can help to first extract the dimension you plan to useand run that subset through the function directly, e.g.:
+```{r}
+test_z <- z[1,] # Pull the first row out to test, since we are using MARGIN = 1
+f(test_z) # It works!  Now we can use this in apply...
+#Notice z and y are transposed:
+z # 3 rows and 2 columns
+y # 2 rows and 3 columns
+```
+Why does this happen? `apply()` coerces the output such that the column length == the length of a single function output. The exception to this is if a function returns a "scalar", the output of `apply()` will be a vector.
+We can always transpose the output using t()
+```{r}
+?t
+y_transposed <- t(y)
+y_transposed
+```
+We can send additional parameters to a function if the function is written properly:
+```{r}
+z <- matrix(1:6,nrow=3)
+f <- function(x,y) { x/c(y,8) }
+y <- apply(X=z,MARGIN=1,FUN=f,y=2) # Notice we have assigned y to be 2
+```
+One note: `apply()` is not vectorized, so is not technically faster than looping through each dimension of a matrix (or array) BUT, as we will learn later, uses the basic structure of a *parallel* version of `apply()` that can be extremely fast.
+
+
+### 2-d looping
+*This section is key for next's week's assignment!*
+
+The goal is to write a loop that will go through all possible combinations of a matrix in 2d.
+
+Think of this as writing an image one pixel at a time, starting with the first row and then writing each column.  Once all the columns of that first row are written, we move to the second row and repeat the process.
+
+So, given matrix dimensions `nrow_x` and `ncol_x`:
+```{r}
+nrow_x = 3
+ncol_x = 2
+myMatrix <- matrix(seq(10,60,by=10),nrow=nrow_x,ncol=ncol_x)
+myMatrix
+```
+We can loop through each entry by some nested for loops.  First start with looping through each row:
+```{r}
+for(current_row in seq(nrow(myMatrix)))
+{
+	print(current_row)  
+}
+```
+We can loop through each column by:
+```{r}
+for(current_col in seq(ncol(myMatrix)))
+{
+	print(current_col)  
+}
+```
+We can now put them together:
+```{r}
+for(current_row in seq(nrow(myMatrix)))
+{
+	for(current_col in seq(ncol(myMatrix)))
+	{
+		print(paste("Current row:",current_row,
+						"Current col:",current_col))
+	}
+}
+```
+Now let's use these to subscript a matrix:
+```{r}
+for(current_col in seq(ncol_x))
+{
+	for(current_row in seq(nrow_x))
+	  {
+		print(paste("the center cell value is:",
+						myMatrix[current_row,current_col]))
+	}
+}
+myMatrix
+```
+
+#Data Frames
+
+Data frames are the most common way of storing data in R. A data frame is a list, but with some restrictions, namely, each element of the list must be   
+
+1. a vector 
+2. the same length of the other elements
+
+The vectors, however, can be different modes (unlike a matrix). In other words, a data frame is the R equivalent of a spreadsheet. MANY models in R require the inputs to be a data frame.
+
+## Useful Data Frame Functions
+
+* `head()` -show first 6 rows
+* `tail()` -show last 6 rows
+* `dim()` - returns the dimensions
+* `nrow()` - number of rows
+* `ncol()` - number of columns
+* `str()` - structure of each column
+* `names()` - shows the `names` attribute for a data frame, giving the column names
+
+## Generating Data Frames
+We can define a data frame in a similar fashion as a list, but making sure we meet the vector length requirements
+```{r}
+d <- data.frame(kids=c("Jack","Jill"),ages=c(12,10))
+d
+```
+Try it yourself, type into the console:
+
+`f <- data.frame(kids=c("Jack","Jill"),ages=c(12,10,11))`
+
+><span style="color:CRIMSON;">19. Why didn't that work?  *Hint:* read the errors</span>
+
+Just like lists, we can access individual variables by using the variable names:
+```{r}
+d$ages
+```
+We can print the whole data frame:
+```{r}
+d 
+```
+or in compact form:
+```{r}
+str(d)
+```
+Beware! `data.frame()`'s default behavior turns strings into factors. Use `stringsAsFactors = FALSE` to avoid this.
+
+><span style="color:CRIMSON;">20. What does `as.matrix()` do when applied to a data frame with columns of different types?</span>
+
+###Combining Data Frames
+
+As with matrices, we can use `rbind()` and `cbind()`. `rbind()` adds a row (and must have the same number of elements as the data.frame).Note that with `rbind()`, we often want to have the input be a data frame or a list to control the mode properly:
+(*Note* that `runif(x)` generates x random numbers between 0 and 1.)
+```{r}
+?runif 
+random_data <- data.frame(data1=runif(5),data2=runif(5),data3=runif(5))
+random_data
+xnewrow <- c(2,"abc",6)
+xnewrow2 <- c(1,2,3)
+xnew <- rbind(random_data,xnewrow)
+xnew
+xnew2 <- rbind(random_data,xnewrow2)
+```
+`cbind()` needs to have the same number of rows as the data frame. We'll add a column to random_data that is the difference between `data1` and `data2`:
+```{r}
+random_data_new <- cbind(random_data,(random_data$data1-random_data$data2))
+random_data_new
+```
+Notice how ugly this name is.  We could just as easily used our technique for adding a new component to a list:
+```{r}
+random_data_new$data_diff <- random_data$data1-random_data$data2
+random_data_new
+```
+Notice that recycling will be used for making sure the data frame components are all the right length:
+```{r}
+random_data_new
+random_data_new$one <- 1
+random_data_new 
+```
+Notice how the variable named `one` has two `1`s.
+
+### Merging Data Frames
+Data frames are R's version of a spreadsheet.  Like any properly formatted table,we can use relational operators to join two tables together.  The basic function is `merge()`:
+```{r}
+?merge
+d1 <- data.frame(names=c("Jack","Jill","John"),states=c("CA","IL","IL"))
+d2 <- data.frame(ages=c(10,7,12),names=c("Jill","Jillian","Jack"))
+d1
+d2
+merge(d1,d2)
+```
+Notice a few things.  First R recognized that the shared variable was `names`, which was used to perform the join.  Second, notice that only shared matches were returned (`John` is missing from `d2`, `Jillian` is missing from `d1`).  Finally, notice that the order of the variables retured follows the first entry, then the second.
+
+><span style="color:CRIMSON;">21. What if we don't have the same variable name? Change the data frame variables names using `names(d2) <- c("ages","kids")`. Then, use the help documentation to merge `d1` and `d2`. Print your results.</span >
+
+Like with all databases, be careful if you have non-unique indices:
+```{r, error=T}
+d2 <- rbind(d2,list("15","Jill")) # We now have 2 Jills in d2
+d1
+d2
+merge(d1,d2,by.x="names",by.y="kids",all.x=TRUE,all.y=TRUE,all=TRUE)
+```
+Notice that Jill now appears twice in the output.Take a closer look at `?merge` to see how to fine-tune a join.
+
+## Types, Testing and Coercion
+
+Note that data frames are just a special kind of list:
+```{r}
+list()
+is.list(iris)
+class(iris)
+```
+
+You can coerce an object to a data frame with `as.data.frame()`:
+* A vector will create a one-column data frame
+* A list will create one column for each element; you get an error if they aren't the same length
+* A matrix will create a data frame with the same number of columns and rows as the matrix
+
+><span style="color:CRIMSON;">22. Can you have a data frame with 0 rows? What about 0 columns?</span>
+
+><span style="color:CRIMSON;">23. Plot a histogram of all the `Sepal.Width` values in the dataset `iris` that are *less than or equal to* `3.0`. </span>
+
+##Indexing Data Frames
+
+Just like a matrix, we can extract subdata frames using matrix notation.
+```{r}
+random_data[2:5, ] # Returns observation (rows) 2 through 5, all variables (columns).
+random_data[2:5,2] # Returns rows 2 through 5, 2nd column.  
+```
+Note that it is coerced to a vector:
+```{r}
+class(random_data[2:5,2]) 
+# We can prevent the coercion using drop=FALSE
+random_data[2:5,2,drop=FALSE]
+class(random_data[2:5,2,drop=FALSE])
+```
+
+## Filtering Data Frames
+
+As with matrices, we can do some filtering using logical statements:
+```{r}
+random_data[random_data$data1 >= 0.5, ]
+```
+
+### Handling NAs 
+
+Let's set the 2nd row, 1st column to be NA:
+```{r}
+random_data[2,1] <- NA
+random_data
+```
+In many models, we need "complete cases" where there is no missing data.  We can use:
+```{r}
+complete.cases(random_data) # Which checks each row to make sure there aren't NAs.
+```
+We can now use this to subset these out:
+```{r}
+random_data[complete.cases(random_data),]
+```
+
+### Subsetting Data Frames
+`subset` can be used with data frames as well:
+```{r}
+?subset
+subset(random_data,data1 >= 0.5)
+```
+
+## Splitting Data Frames
+
+If we want to split a vector or data frame into unique components, we can use `split()`:
+```{r}
+?split
+d <- data.frame(gender=c("M","M","F","M","F","F"),
+		age=c(47,59,21,32,33,24),
+		income=c(55000,88000,32450,76500,123000,45650))
+d$over25 <- ifelse(d$age > 25, 1, 0)
+d
+split(x=d$income,f=d$gender) # The output of split is a LIST
+split(x=d$income,f=list(d$gender,d$over25)) # Just like with tapply(), we can use multiple factors.
+```
+### by()
+`tapply()` is designed for use with vectors, but what if we want to do something similar with a dataframe?
+```{r}
+?by
+myData <- warpbreaks # a built in dataset
+myData
+str(myData)
+by(data=myData,INDICES=warpbreaks$wool,FUN=summary)
+```
+What this did was first split the `warpbreaks` dataframe row-by-row and grouped according to the INDICES (in this case, the `wool` column).  Then, the function is applied to each new data frame that was created.  We ran the `summary()` function on these groups.
+```{r}
+?summary
+```
+
+## Applying functions to data frames
+
+`apply()` can be used on a data frame IF all the columns are the same type:
+```{r}
+random_data
+apply(random_data,2,max)
+```
+
+><span style="color:CRIMSON;">24. Try using apply on 'd'. What happens? Why? </span>
+
+Just like lists, we can `lapply()` and `sapply()` a data frame.We can sort each individual component of the data frame.
+```{r}
+?lapply
+dl <- lapply(d2,sort)
+dl
+```
+`lapply()` applied to a data frame will apply the function to
+each *column*, and return a list.
+```{r}
+class(dl)
+```
+We can **coerce** this output back to a data frame:
+```{r}
+?as.data.frame
+dl_df <- as.data.frame(dl) 
+```
+Notice that each column is now sorted, although we've lost the link between the name and their age.
+```{r}
+dl_df
+class(dl_df)
+```
+ 
+## Functions
+
+As we have seen, functions are very common in R. We have been calling a lot of built-in functions in the previous turorials (e.g., `cbind()`, `summary()`, `typeof()`, etc...). 
+
+Often we will want to write our own functions. Let's say we want to perform a calculation over and over again in our code. We could write the equation out each time, or we can save a little bit of time and build a function that allows us to repeat several operations using a single command.
+
+## Looping in R
+
+If you recall our function `oddcount()`, then you have seen a loop before. Specifically, we used a for loop when we said `for (n in x)` where we idenitified a modulo operator (`%`)for each element in vector `x`. What this, and all loops do is allow us to repeat a sequence of operations under a specific set of conditions, thus enabling us to automate parts of our code that are reptitive. 
+
+# Objectives
+After this tutorial, you will be able to: 
+
+* Write, or define a for loop, a while loop, and a repeat loop
+* Use Boolean operators
+* Write, or define a nested loop
+* Describe what vectorization is, and describe the tradeoffs between using loops versus vectorized solutions.
+* Quantify the execution time for a loop solution and a vectorized solution
+* Explain why we should divide programs into small, single-purpose functions. 
+* Use a function that takes parameters (input values)
+* Return a value from a function
+* Set default values for function parametrs 
+* Write, or define, a function
+* Test and debug a function
+* Use the `apply` family for vectorized solutions
+
+# Loops
+
+We have also been introduced to the `apply` family of functions, which allow us to apply functions over multiple elements in lists, matrices, etc in a fashion similar to looping. As PETA would hate me for saying, there are many ways to skin a cat, and there are multiple solutions to similar problems in programming. Using `apply`
+
+Using loops in R is controversial. Sometimes you need to use them, but often they are not the most efficient solution. Read the following blog post which covers the topic very nicely. Make sure you can replicate the code shown in the blog post. 
+
+<https://www.r-bloggers.com/a-tutorial-on-loops-in-r-usage-and-alternatives/>
+
+<http://paleocave.sciencesortof.com/2013/03/writing-a-for-loop-in-r/>
+
+<https://www.r-bloggers.com/r-tutorial-on-the-apply-family-of-functions/>
+
+><span style="color:CRIMSON;">25. What is a loop? Can you provide me with a real-life example in either remote sensing or your own research where such a thing would be handy?.`</span>
+
+><span style="color:CRIMSON;">26. What does it mean to "grow" variables or datasets using a loop? Show an example of code that does this.</span>
+
+><span style="color:CRIMSON;">27. In 500 words or less, discuss why you would want to write loops, why some people look down on them in R, what the suggested alternative is.</span>
+
+# Creating Loops
+## For Loops
+`for()` is the most common type of looping, which you are now familiar with.
+`for(n in x) {}` translates to:
+iterate through each element of `x`, assigning the variable `n` to each element in sequence.
+```{r}
+x <- c(5,12,13)
+for(n in x) { print(n) }
+```
+
+><span style="color:CRIMSON;">28. Write a for loop that caluculates the square of the first 10 elements in the vector `x`, where `x <- rnorm(40)`</span>
+
+## This needs to be worked into previous for loop example
+A nice shortcut with for loops is using the next statement, which skips all subsequent commands within a loop and proceeds to the next iteration.
+
+In the next example, this for loop will print a command every time it sees an odd number,but skips to the next iteration when it sees an even number. 
+```{r}
+for(i in 1:10)
+{
+	if(i %% 2 == 0) next
+	# Notice that "Odd!" is never printed when i is even, 
+	# because next skips past it.
+	print(i)
+}
+```
+
+><span style="color:CRIMSON;">29. Write a while loop that prints the even numbers from 4 through 29. </span>
+
+><span style="color:CRIMSON;">30. Write a while loop that prints multiples of 10 from 100 to 190. </span>
+
+### Looping over nonvector sets
+
+We can coerce non vector sets into a list, then use `lapply` to loop through them 
+or we can use `get()`
+```{r}
+?get
+```
+Say we have two matrices:
+```{r}
+u <- matrix(runif(6),ncol=2)
+v <- matrix(runif(6),ncol=2)
+```
+We want to perform a linear regression between columns 1 and 2 of each matrix, e.g. for one matrix:
+```{r}
+?lm
+lm(u[,2] ~ u[,1])
+lm(v[,2] ~ v[,1])
+```
+So how do we do loop through each matrix?  With `lapply`, we'd do:
+```{r}
+newlist=list(u=u,v=v)
+lapply(X=newlist,FUN=function(x) {lm(x[,2] ~ x[,1])  })
+```
+We can also do this by looping through a character vector of variable names:
+```{r}
+for (m in c("u","v")) # Notice the variable names are in quotes
+{
+	z <- get(m) # Gets the object that the character variable name is referring to
+	print(lm(z[,2] ~ z[,1]))
+}
+```
+More clearly:
+```{r}
+myvar <- matrix(runif(20),ncol=5)
+get("myvar")
+```
+
+### If-Else Statements
+
+So far we've mostly talked about `if()` statements, which execute only if `TRUE`.  We can append an `else` statement as well:
+```{r}
+r <- 3
+if(r == 4)
+{ # Execute if TRUE
+	x <- 1
+} else
+{ # Execute if FALSE
+	x <- 3
+}
+x
+```
+More carefully, an if statement must coerce down to:
+```{r}
+if(TRUE)
+{
+	# Do something.
+} else
+{
+	# Do something else.
+}
+```
+
+><span style="color:CRIMSON;">31. Create a 10 x 10 matrix of random numbers. Write a loop that replaces the 3rd row and 5th column of numbers  with "ciao". </span>
+
+### Boolean operators
+```{r}
+?"&"
+x <- c(T,F,F) # TRUE and FALSE can be abbreviate T and F
+y <- c(T,T,F)
+```
+#### Element-wise boolean operators:
+* `x & y` -Element-wise `AND` statement
+* `x | y` -Element-wise `OR` statement
+* `xor(x,y)` -Element-wise `XOR` (exclusive `OR`) statement
+* `!x` -Element-wise `NOT` statement
+
+Notice that none of these could be used with an `if()` statement, because an `if()` statement must collapse down to a *single* `TRUE`
+
+* `x && y` - `AND` only uses the first element of `x` and `y`
+* `x || y` - `OR`  only uses the first element of `x` and `y`
+
+In arithmetic, a `TRUE == 1` and `FALSE == 0`, so:
+```{r}
+TRUE + 2
+FALSE - 1
+```
+
+><span style="color:CRIMSON;">32. Create a 100 x 100 matrix of random numbers. Use the `system.time()` function to measure the execution of a loop that calculates `10*sin(0.9*pi)` on the matrix. Then use `system.time()` to measure the vectorized solution. </span>
+
+#Functions
+
+Before we go any further, begin by reading this blog post. Make sure you can replicate the code shown in the blog post. 
+
+<https://www.r-bloggers.com/how-to-write-and-debug-an-r-function/>
+
+><span style="color:CRIMSON;">33. What are the general elements of a function? Which elements are not required?</span>
+
+><span style="color:CRIMSON;">34. How do you pass a value of an object from the local environment to the global environment (outside of a function)?</span>
+
+><span style="color:CRIMSON;">35. What is the name of the `R` function that can help you identify errors in your function?</span>
+
+><span style="color:CRIMSON;">36. Aside from using the fucntion identified in `3.` above, what is another way to troubleshoot your functions? *Hint*: we used this in our first function `oddcount` in lab 1.</span>
+
+><span style="color:CRIMSON;">37. What is the name of a function to write your own error messages when writing a function?.</span>
+
+><span style="color:CRIMSON;">38. Why do you want to keep your functions short?</span>
+
+><span style="color:CRIMSON;">39. What are local versus global variables? Why do they matter when you write functions?</span>
+
+## Creating functions
+
+We are going to define a function `wave_to_freq` that converts wavelengths to frequency.
+```{r}
+wave_to_freq <- function(wave) {
+  #note wavelength needs to be in meters
+  freq <- (299792458/wave) #speed of light in m/s
+  freq
+}
+```
+Notuce the syntax we used to define this function:
+```{r, error=F}
+FunctionNameHere <- function(InputVariableHere) {
+  what-to-do-here
+  what-to-return-here
+}
+```
+
+###Step 1: Define function name
+
+Defining a function begins with the name of your new function. When you name your function, make sure it is a good descriptor of what you are doing, and make sure it isn't the same name as a commonly used function in `R'.
+
+###Step 2: Call to make a function
+
+After you define your name, you use `function` followed by a list of parameter names in parantheses. The parameters are input values the function will use to perform any calculations. For example, in our function `wave_to_freq` the input will be the wavelength (in meters) we wish to convert from wavelengths to frequency (in Hz). You can have as many input parameters as you wish, but having too any is considered poor style, since it can get confusing. 
+
+###Step 3: Write the body of your function
+
+The body, or **implementation** of your function is surrounded by curly brackets `{}`. 
+
+Although it is not necessary, it is considered good style to 
+*leave the initial `{` at the end of the first line
+*leave the final `}` on its own line at the end
+*indent the code in the body between `{}` by 4 lines
+`R` doesnt care if you do this, but it makes your code readable to yourself and other users. Remember, the whole point of learning to code is creating transparency, repeatability, and reproducibility for youself and others!
+
+###Step 4: Call the function
+
+After we have defined the function, we are ready to use it. When we call the function, it is just like other functions in `R`, the values we pass to it are assigned to those variables so we can use them inside the function.
+
+The last line in the function is what `R` will evaluate as the returning value. 
+**Remember!** the last line in the function must be a command to print to the screen, and NOT an object deifnition. Otherwise, the function WILL WORK, but it will return nothing. It will provide no output. In our example, `wave_to_freq`, we print the value of the object `freq`.
+
+So, let's try calling our new function:
+```{r}
+#call function for wavelength = 0.1 m
+wave_to_freq(0.1)
+```
+Lets be clever and use `paste` to create a sentence that better explains our results
+```{r}
+paste("A wavelength of 10 cm has a frequency of", wave_to_freq(0.1),"Hz"  )
+```
+
+><span style="color:CRIMSON;">40. What happens if you write the function as following in the code below and test it on wavelength = 0.02 m?</span>
+
+```{r, echo=FALSE, error=FALSE}
+wave_to_freq <- function(wave) {
+  freq <- (299792458/wave)
+}
+```
+
+><span style="color:CRIMSON;">41. Using the new function definition from 7., what happens if you assign the function `wave_to_freq()` to object `x` and call `x`?</span>
+
+><span style="color:CRIMSON;">42. Write a function that converts nanometers (nm) to meters (m).</span>
+
+##Compound functions
+
+As you saw in the assigned reading, you can create multiple functions in one call. This is how larger programs are built: We define basic operations, then combine them into larger and larger chunkc to get the effect that we want.
+
+Real-life functions tend to be slightly larger than the dummy functions we have been working with in these tutorials, up to 6-36 lines. You don't really want a function to be longer than that, or it makes it too difficult to understand what is going on for the reader.
+
+><span style="color:CRIMSON;">43.Write a function that can take wavelength in micrometers as an input, and output the equivalent value in Giga Herz (GHz).</span>
+
+><span style="color:CRIMSON;">44. Using the function you wrote above, what radar band (provide the letter) corresponds to 30,000 micrometers?.</span>
+
+# Apply-The most used vectorized solution
+
+Apply and its variants are `R`'s alterative to looping. They are called **loop functionals** or sometimes just ** functionals**. Ostensibly, they provide faster solutions through vectorization.
+Read this blog post. Make sure you can reproduce the code.
+
+<https://www.r-bloggers.com/r-tutorial-on-the-apply-family-of-functions/>
+
+## `lapply()`
+
+We've already seen the power of the `apply()` family in action. Let's get soem more practice with it.
+
+The simplest functional is the apply family is `lapply()`. `lapply()` takes a function, applies it to each element in a list, and returns the results in a form of a list. 
+
+All of the other loop functionals are basically variations on `lapply()`; they just use different ypes of inputs and result in different types of outputs.
+
+In addition to (maybe) being faster, `lapply()` is more elegant than looping because it eliminates a lot of the "boiler plate" extra lines of code associated with looping. For example, let's create some random data:
+```{r}
+z <- replicate(20, runif(sample(1:10,1)), simplify = FALSE)
+```
+Now, using a for loop, let's create on index of the lengths of each vector in the list `z`
+```{r}
+# make an empty vector of the length of our random data from above
+out <- vector("list", length(z))
+# write a for loop
+for (i in seq_along(z)) {
+  out[[i]] <- length(z[[i]])
+}
+unlist(out) # here we use unlist to convert the output from a list to a vector
+```
+So, using a pretty straightforward loop we used 5 lines of code.
+Let's do this using `lapply()`:
+```{r}
+unlist(lapply(z,length)) # here we use unlist to convert the output from a list to a vector
+```
+So, the same result, using only one line of code. 
+
+Since data frames are also lists, `lapply()` is useful when we want to do something to each column of a data frame. Let's use the example data set `mtcars`.
+```{r}
+#What class is each column?
+unlist(lapply(mtcars, class))
+#Divide each column by the mean of that column
+mtcars[] <- lapply(mtcars, function(x) x /mean(x))
+```
+
+><span style="color:CRIMSON;">45. Use lapply() and a function to find the coefficient of variation (the standard deviation divided by the mean) for all columns in the `mtcars` dataset.</span>
+
+><span style="color:CRIMSON;">46. The function below scales a vector so it falls in the range [0, 1]. How would you apply it to every column of a data frame? How would you apply it to every *numeric* column in a data frame? </span>
+
+```{r}
+scale01 <- function (x) {
+  rng <-range(x, na.rm=TRUE)
+  (x-rng[1] / rng[2] - rng[1])
+}
+```
+## Better example: Band indexes, scaling application of calibration coefficients
+
+
+><span style="color:CRIMSON;">47. Use both for loops and `lapply()` to fit linear models to the `mtcars` data frame using the formulas stored in this list:</span>
+
+```{r}
+formulas <- list(
+  mpg ~ disp, 
+  mpg ~ I(1 / disp), 
+  mpg ~ disp + wt,
+  mpg ~ I(1 / disp) + wt
+)
+```
+
+><span style="color:CRIMSON;">48. What are the `sys.time()` calculations for the loop and `lapply()` solutions above?</span>
+
+## Other functionals in the apply family
+* `sapply()` and `vapply()` are close to `lapply()`, but produce vectors, matrices, and arrays as outputs, instead of lists.
+* `Map()` and `mapply()` iterate over multiple **input** data structures in paralell
+* `mcapply()` and `mcMap()` are paralell versions of `lapply()` and `Map()`
+
+## The `plyr` package
+Because R is open source, functionals have grown organically over time, and they are somewhat inconsistent. They all have differet variations in their arguments and what they can implement which makes them difficult to use (because you have to memorize a lot of different rules). Also, they are limited in terms of inputs and outputs.
+
+The plyr package provides consistently named fucntions with consisentently named arguments and covers all possible combinations of input and output data structures. Basically they split up the input, apply a function to each piece, then combine the results. 
