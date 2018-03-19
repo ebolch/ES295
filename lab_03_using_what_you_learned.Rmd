@@ -1,0 +1,490 @@
+---
+title: 'Lab 3: Using what we Learned and Debugging'
+author: "ES_____"
+date: 
+output:
+  html_document:
+    toc: yes
+---
+#TO DO
+
+*Renumber Questions
+*complete trycatch section
+*Data set and utilize previous lab
+*Finish synthesis questions
+
+
+# Overview
+
+We have learned the basics of R data types and we are starting to become familiar with R syntax. Now, we are going to delve a little deeper into programming with R. We are going to learn how to write functions and how to write loops. 
+
+# Synthesis Questions
+><span style="color:CRIMSON;">1. Use `str()` to compare the results of using `list()` and c`()` on `l` and `j` for: `l <-c(list(1,2),c(3,4))` and `j=list(list(1,2),c(3,4))` </span> 
+
+><span style="color:CRIMSON;">2. Use `str()` to compare the results of using `list()` and c`()` on `l` and `j` for: `l <-c(list(1,2),c(3,4))` and `j=list(list(1,2),c(3,4))` </span> 
+
+><span style="color:CRIMSON;">3. Use `str()` to compare the results of using `list()` and c`()` on `l` and `j` for: `l <-c(list(1,2),c(3,4))` and `j=list(list(1,2),c(3,4))` </span> 
+
+###Packages to install
+
+This is a nice little function written by Lorenzo Booth, a current ES grad student for checking to see if packages are installed and loading them.
+```{r load_packages}
+pkgTest <- function(...) {
+  # Author: asmtry (lbooth@ucmerced.edu)
+  # Install dependency libraries if not installed and load them
+  dep.list <- c(...)
+  new_pkgs <- dep.list[!(dep.list %in% installed.packages()[,"Package"])]
+  if(length(new_pkgs)) install.packages(new_pkgs)
+  invisible(lapply(dep.list, library, character.only=T))
+}
+# Load dependencies and setup environment
+pkgTest("ggplot2", "nlme", "MASS")
+```
+
+
+
+
+# Using what was learned
+
+## Debugging
+
+You are already becoming experts on debugging code, but if you are still struggling, the main thing to remember is the concept of **CONFIRMATION.**  Don't assume your code is going to work the way you want it to: test it!  
+
+To begin with, always have small test cases that you have figured out the answer to ahead-of-time, e.g.confirm the results independently.
+
+If you write your code in a modular fashion, your top level function should contain a very small number of commands, most of which are function calls This will allow you to test the internal functions one at a time.
+
+### Debugging Strategies
+1. Read and think about the error message. Sometimes they are helpful, sometimes they are sort of cryptic. Look up a given error message in the R mailing list archive, <https://www.r-project.org/mail.html>, Stack Overflow <http://stackoverflow.com/questions/tagged/r>, or a simple web search. Double quotes for the error message and some context in which you were trying to use it help. 
+2. Fix errors from the top down. Fix the first error that is reported. Then the next one. It is common to have a string of errors, which can freak you out at first. Howeve, they often flow from a signle error at the beginning. 
+3. Restart your R session. Is the bug reproducible? If you restart R and the bug persists, that can help you in eliminating the possibiity that you used a global variable that you didn't intend to.
+4. Build code in pieces, and tear it down in pieces. Start with the innermost implementation of a function (the thing yiu want to do) and work outwards. 
+* If you wrote your code with lots of modularity (many functions), it is easier to follow where the bugs are.
+5. You may want to print warnings as they occur (the default is to save them) using `options(warn=1)`
+6. The "old school" way of printing each line in the code can be very handy
+7. Use R's interactive debugging tool.
+
+### Common causes of bugs in R
+
+* parentheses and brackets mismatches
+* Using the wrong function or variable name
+* `[[[...]]]` vs. `[...]`
+* `==` vs. `=`
+* Comparing real numbers exactly using `==` can be dangerous because a computer uses only limited numerical expression. See: `?num-prec`
+* You exoect a single value, but computer returns a vector
+* You want to compare an entire vector, but your code is only considering the first element. Check out `?identical` or `?all.equal`
+* Silent type conversion when you don't want it (e.g., character to factor), or lack of coercion where youre expecting it (e.g. matrix to data frame)
+* Giving unnamed arguments to a function in the worng order. When it doubt, check the `?` documentation for a function.
+* In an `if-else` statement, the `else` cannot be on its own line (unless all the code is enclosed in `{}`) because R will see the `if` part of the statement, which is a valid R statement, will execute that, and then will encounter the `else` and return an error.    
+* Forgetting to define a variable in the environment of a function and having R, via lexical scoping, get that variable as a global variable from one of the enclosing environments. At best the types are not compatible and you get an error; at worst, you use a garbage value and the bug is hard to trace. In some cases your code may work fine when you develop the code (if the variable exists in the enclosing environment), but then may not work when you restart R if the variable no longer exists or is different.  
+* R (usually helpfully) drops matrix and array dimensions that are extraneous. This can sometimes confuse later code that expects an object of a certain dimension.
+
+### Code defensivley-avoiding bugs in R
+* Document document document
+* Confirm confirm confirm
+  + Check inputs to `if` and the ranges i `for` loops
+  + Provide reasonable default arguments
+  + Check that the output produced is valid
+  + Stop executions based on checks and give informative error messages 
+* Don't hard code numbers - use variables (e.g., number of iterations, parameter values in simulations), even if you don't expect to change the value, as this makes the code more readable and reduces bugs when you use the same number multiple times; e.g. `speedOfLight <- 3e8` or `nIts <- 1000`
+* Code in a modular fashion
+* Write code initially for clarity and accuracy without trying to be efficient. For example, write a foor-loop first, then once you know everthing is work, turn it into a vectorized solution if you can.
+* Plan your code in advance. Anticipate problems and perfrom tests along the way.
+
+## Debugging Example
+
+Here's a buggy function:
+```{r, echo=TRUE, error=T, eval=FALSE}
+findruns <- function(x,k) {
+	n <- length(x)
+	runs <- NULL
+	for(i in 1:(n-k))
+	{
+		if(all(x[i:i+k-1]==1) runs <- c(runs,i)
+	}
+	return(runs)
+}
+```
+Try running pasting this function *exactly as it appears* in R. What happens?
+
+
+### First step of debugging: PARENTHESES, BRACKETS, BRACES
+If you see a bunch of "unexpected" warnings, this is a good sign you've not closed a parentheses, bracket or brace. This is probably to most common source of error.  
+
+```{r, echo=TRUE, error=TRUE}
+findruns <- function(x,k) {
+	n <- length(x)
+	runs <- NULL
+	for(i in 1:(n-k))
+	{
+		if(all(x[i:i+k-1]==1) runs <- c(runs,i)
+	}
+	return(runs)
+}
+```
+
+Scroll up in the warnings and look for the first one:
+
+`Error: unexpected symbol in:
+`		"        {
+`		if(all(x[i:i+k-1]==1) runs"`
+
+Oops, we missed a parentheses to close the `if()` statement, after the `...==1)`.  
+Correct it and try it again:
+```{r, error=TRUE}
+findruns <- function(x,k){
+	n <- length(x)
+	runs <- NULL
+	for(i in 1:(n-k))
+	{
+		if(all(x[i:i+k-1]==1)) runs <- c(runs,i)
+	}
+	return(runs)
+}
+```
+Ok, so the function had no obvious errors, but does it do what we want?  CONFIRM CONFIRM CONFIRM.
+
+This should find the position of all runs of 1 of length 2:
+```{r}
+findruns(x=c(1,0,0,1,1,0,1,1,1),k=2) 
+```
+The output, as you can see, should be 4, 7 and 8. We have confirmed something is wrong with a simple test case.
+
+There are two basic ways of debugging: 
+
+1. Print statements (Sanity checks)
+2. `R`'s debugging broswer
+
+Printing is the "old school" way, which involves using a lot of print statements to confirm each section.  This is what we did in lab 1. This can get messy,but is a quick and dirty way to debug code.
+
+Single-stepping through your code is an important trick, and R provides nice functions to help you with this. We use what `R` calls the `browser` to debug code.  
+
+### Second Step -Using the `R Browser`
+#### Commands for the `Browser` prompt:
+* `n` ("next") or ENTER will execute the next line and then pause.
+* `c` ("continue") basically execute until a close brace "}" is found.  What this amounts to is if you enter a loop, the entire loop will execute before pausing again.  If you are outside of a loop, the rest of the funciton will execute down to the brace.
+* Any `R` command: you can type any R command at the browser prompt to query/modify the execution.  One exception: if you have a variable named after a browser command, wrap it in a `print()` statement, e.g. `print(n)` or `print(c)`.
+* `where` : prints a stack trace, what sequence of function calls led to the execution of the current location.  
+* `Q` : quits the browser and exits back to interactive level.
+
+#### Using `R Browser`
+
+First is the function `debug()`:
+```{r}
+?debug
+```
+If you call debug on a function you've written, when you execute that function, R will enter the browser and allow you to step through the function line by line.
+```{r, eval=FALSE}
+debug(findruns)
+```
+Debug is now enabled for function `findruns()`.  Run the test case again:
+```{r}
+findruns(c(1,0,0,1,1,0,1,1,1),2)  
+```
+We are now in browser mode. Note the prompt says `Browse[2]>` We will now step through the function one line at a time and test to see what's going on.
+
+The first line was simply the function call.  We want to make sure we entered `x` correctly, so type `x` at the Browse prompt:
+```{r}
+x
+```
+Let's also make sure k was entered correctly, 
+```{r echo=FALSE, results="hide, message=FALSE"}
+k=2
+```
+
+```{r}
+k
+```
+Yep, good to go. Type `n` to go to the next line:
+```{r}
+n
+# And again:
+n
+```
+Let's print `n` and confirm that the variable `n` is indeed the length of `x`.  
+Remember to wrap this in a print line:
+```{r}
+print(n)
+```
+Notice that `R` tells you the NEXT line it will execute each time you hit `n`.  
+Go to the next line:
+```{r}
+n
+```
+This is the beginning of our loop.  Let's enter the loop:
+```{r}
+n # and again, but first notice that the next line is to assign i.
+n
+```
+Let's look at `i` and make sure that it began at the right value:
+```{r}
+i
+```
+Yep, it started at location #1.
+
+Now, before we move forward, let's make sure our if statement is working by breaking it into pieces.  This line is supposed to take a subsection of `x` ranging from the current position `i`, running a length of `k`.  In this case, `k` is `2`, our current index is `1`, so the indexes should be `1:2`, so the subvector should be `1 0`:
+```{r}
+x
+```
+Did this work?  Confirm it!
+```{r}
+x[i:i + k - 1]
+```
+*Nope!*  This didn't return two values, just one.  Let's look and see if the index itself is the problem:
+```{r}
+i:i + k - 1
+```
+That's not right, it should be `1 2`.  Let's make sure `i` and `k` are right:
+```{r}
+i
+k
+```
+Yep, they are right.  Ok, so our indexing is wrong.  Oops, we forgot
+about operator precendence!  Let's see if this works:
+```{r}
+i:(i + k - 1)
+```
+Ah hah!  Ok, let's stop the browser right there, fix our code, and
+test it out again:
+first, type 
+`Q`
+then:
+```{r}
+findruns <- function(x,k)
+{
+	n <- length(x)
+	runs <- NULL
+	for(i in 1:(n-k))
+	{
+		if(all(x[i:(i+k-1)]==1)) runs <- c(runs,i)
+	}
+	return(runs)
+}
+```
+Now test it again:
+```{r}
+findruns(c(1,0,0,1,1,0,1,1,1),2) 
+```
+**ARGH!**  Still not right.  It should have been `4 7 8`.
+
+#### Setting the breakpoint
+
+We are now going to use a "breakpoint" so we don't have to step through the beginning of the code again, since we know the first part works up until it enters the loop.  There are two ways to do this, insert the function `browser()` within the function, or use setBreakpoint() on the file.
+```{r}
+?setBreakpoint
+```
+Now we'll set at breakpoint at line 5 in the code:
+```{r}
+setwd("/Users/elhestir/teaching/591_s17/labs") # set your wd to where you have saved the .R script
+```
+First source the file:
+```{r, error=TRUE}
+source("findruns.R")
+# Then setBreakpoint at line 5:
+setBreakpoint("findruns.R",7)
+# Now start the code:
+findruns(c(1,0,0,1,1,0,1,1,1),2)
+```
+This stopped on the`if(...)` line.  Test `i` and `k`:
+```{r}
+i
+k
+```
+Now test our modified subvector:
+```{r}
+x[i:(i+k-1)]
+```
+Yay!  That's right!
+Go to the next iteration using `c`:
+```{r}
+c
+```
+Test `i`:
+```{r}
+i
+```
+Great, it iterated.  Now our index:
+```{r}
+x[i:(i+k-1)]
+# Compare to the full vector:
+x 
+```
+Yep, ok that worked.  
+Now we could keep looping through, but let's modify the code a bit to give us the browser on the last iteration of the loop. 
+As a heads up, many errors occur at the first and last iterations.
+First, end the browser by typing
+`Q`,
+then:
+```{r}
+# Mod the code:
+findruns <- function(x,k)
+{
+	n <- length(x)
+	runs <- NULL
+	# Notice our loop ends at (n-k)
+	for(i in 1:(n-k))
+	{
+		if(all(x[i:(i+k-1)]==1)) runs <- c(runs,i)
+		# Enter the browser on the last iteration:
+		if(i==(n-k)) browser()
+	}
+	return(runs)
+}
+
+findruns(c(1,0,0,1,1,0,1,1,1),2) 
+```
+Ok, check `i`, which should be at the last iteration:
+```{r}
+i
+```
+Wait a minute... what did x look like again?
+```{r}
+x
+```
+Uh oh, `x` is 9 elements long, so really should have stopped at 8, not at 7.  Let's take a look at `n-k`:
+```{r}
+(n-k) 
+```
+Yep, its 7.  This, however, would work:
+```{r}
+(n-k+1)
+```
+Ok, let's `Quit` out of the browser, mod the code again, and test it:
+type:
+`Q`
+then:
+```{r}
+findruns <- function(x,k)
+{
+	n <- length(x)
+	runs <- NULL
+	# Notice our loop ends at (n-k)
+	for(i in 1:(n-k+1))
+	{
+		if(all(x[i:(i+k-1)]==1)) runs <- c(runs,i)
+		# Comment out the browser line for now to ignore it.
+		# Enter the browser on the last iteration:
+		# if(i==(n-k)) browser()
+	}
+	return(runs)
+}
+findruns(c(1,0,0,1,1,0,1,1,1),2) 
+```
+Success!  
+```{r}
+findruns(c(1,0,0,1,1,0,1,1,1),5) 
+```
+
+><span style="color:CRIMSON;">4. How can you find out where an error occurred?.</span>
+
+><span style="color:CRIMSON;">5. What does `browser()` do? List the 5 single-key commands that you can use in the `browser()` environment.</span>
+
+><span style="color:CRIMSON;">6. Debug the function below. Demonstrate all of your steps, provide the correction function with clear documentation, and provide confirmation it works as expected.</span>
+
+```{r, echo=TRUE, error=T, eval=FALSE}
+ciao <- function (x) {
+  if (x = 0) salutation) <-  "Buongiorno!" else
+		else
+    (salutation) <- "Arrivederci!"
+} 
+```
+
+><span style="color:CRIMSON;">7. The following function “lags” a vector, returning a version of `x` that is `n` values behind the original. Improve the function so that it (1) returns a useful error message if `n` is not a vector, and (2) has reasonable behaviour when `n` is 0 or longer than `x`. </span>
+```{r, echo=T, error=T, eval=F}
+lag <-  function (x, n=1L) {
+  xlen <- length(x)
+  c(rep(NA, n)), x[seq_len(xlen-n)]
+}
+```
+
+# Using try() and tryCatch()
+tryCatch and try are functions for handling errors and warnings. Read the descriptions of them below.
+
+*try() gives the ability to continue executing a statement and ignore errors that are present.
+*tryCatch() les you specify handler functions that control what happens when a condition is signalled.
+
+```{r}
+?tryCatch
+?try
+
+```
+><span style="color:CRIMSON;">7. What is the difference in these two functions, and when might each be best used? </span>
+
+## Examples
+try() allows execution to continue even after an error has occurred. For example, normally if you run a function that throws an error, it terminates immediately and doesn't return a value:
+
+```{r}
+f1 <- function(x) {
+  log(x)
+  10
+}
+
+f1("x")
+```
+If you wrap the statement that creates the error in try(), the error message will be printed but execution will continue:
+```{r}
+f1 <- function(x) {
+  try(log(x))
+  10
+}
+f1("x")
+
+```
+try(..., silent = TRUE) will suppress the error message. {} can also be used with try({}) to wrap larger chunks of code.
+You can also capture the output of the try() function. If successful, it will be the last result evaluated in the block (just like a function). If unsuccessful it will be an (invisible) object of class "try-error":
+```{r}
+success <- try(1 + 2)
+failure <- try("a" + "b")
+
+class(success)
+
+class(failure)
+```
+The try function can be exteremely helpful when applying a function to multiple elements in a list.
+```{r}
+elements <- list(1:10, c(-1, 10), c(TRUE, FALSE), letters)
+results <- lapply(elements, log)
+
+```
+```{r}
+results <- lapply(elements, function(x) try(log(x)))
+```
+There isn't a built-in function to test for the try-error class, so we'll define one. Then you can easily find the locations of errors with sapply().
+```{r}
+is.error <- function(x) inherits(x, "try-error")
+succeeded <- !vapply(results, is.error, logical(1))
+
+# look at successful results
+str(results[succeeded])
+
+# look at inputs that failed
+str(elements[!succeeded])
+```
+You can clearly see the fourth element of the list was the source of the error becaues it's characters and the function cannot be performed on them.
+### tryCatch()
+tryCatch() is a general tool for handling conditions: in addition to errors, you can take different actions for warnings, messages, and interrupts. One other great feature of tryCatch() is that it has the argument: finally. It specifies a block of code (not a function) to run regardless of whether the initial expression succeeds or fails. This can be useful for clean up (e.g., deleting files, closing connections). This is functionally equivalent to using on.exit() but it can wrap smaller chunks of code than an entire function.
+```{r}
+
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+
+
+```
+#References
+
+Advanced R by Hadley Wickham. http://adv-r.had.co.nz/
+
+
+
