@@ -1,0 +1,76 @@
+---
+title: "List of changes for labs"
+author: "Christiana Ade, Erik Bolch, and Erin Hestir"
+date: "3/25/2018"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Purpose
+This document includes information regarding the changes to Erin Hestirs introduction to remote sensing course material in 2018. Labs have been edited from ES 207, NCSU MEA 598, and Johnathan Greenbergs R course. 
+
+#### Key:
+
+* Each lab section will include a change and comment section. Any new additions that need explaining may also include a solutions section 
+* The table of changes with will have three columns: change, date and the author 
+* Sections in the following blue color will be questions that need to be addressed ><span style="color:BLUE;"> Question .</span>
+
+* Anything labeled in the red is an issue or a bug. ><span style="color:CRIMSON;"> Issue/Bug .</span>
+* Other comments will be in black.
+* The color of the issues or questions will be turned to black when they are answered or addressed. Along with the any relevant information regarding the correction. 
+
+## Overall comments and concerns
+
+* Check to see if the formatting is the same across all labs.`
+
+## Lab 1:
+
+><span style="color:BLUE;"> 1. Cade, 3/25/2018: I found the following document very helpful for some RMarkdown tips(http://www.stat.cmu.edu/~cshalizi/rmarkdown/) Should we include it somewhere? </span>
+
+## Lab 2:
+Main Editor: ebolch
+
+**Changes**
+
+Change | Date | Author
+------------- | ------------- | -------------
+Deleted "how these work" section because this is already included in the github tutorial Lab 1 | 3/21/2018 | cade
+
+
+**Comments**
+
+><span style="color:BLUE;"> 1. In d-2 looping, is this "*This section is key for next's week's assignment!*" comment still required? 3/21/2018 - cade .</span>
+
+
+## Lab 3: 
+Main Editor: cade
+
+**Changes**
+
+Change | Date | Author
+------------- | ------------- | -------------
+Added Remote Sensing Functions, Looping vs. Vectorized solution, Vegetation Indices, Debug a function (Separability Index),  Make a publication quality figure | 3/25/2018 | cade
+
+
+
+**Comments**
+
+><span style="color:CRIMSON;">1. Cade, 3/25/2018:  Several problems with Erik's try statement section when trying to knit. Starting with chunk number 44. -- please address Erik .</span>
+
+><span style="color:BLUE;">2. Cade, 3/25/2018:  Currently, I have 5 spectral files downloaded from the USGS, but the wavelengths and their corresponding measurements are listed in separate text documents for each of the spectra. Do we want the students to clean up the data themselves? This would require a join, which is not something that we have covered yet. Should we clean it up for them in this lab, but then reintroduce this dataset in a future lab (with the join)?.</span>
+
+><span style="color:BLUE;">3. Cade, 3/25/2018:  Should I have different vegetation spectra?.</span>
+
+><span style="color:BLUE;">4. Cade, 3/25/2018:  We have yet to go through a ggplot tutorial, do we need to do so in order for them to answer the new question 13?.</span>
+
+><span style="color:CRIMSON;">5. Cade, 3/25/2018: Missing rchunks from trycatch() section -- please address Erik .</span>
+
+><span style="color:BLUE;">6. Cade, 3/25/2018:  Question 12, did we want JM or SI?.</span>
+
+**Solutions to new sections**
+
+
+## Lab 4: 
+Main Editor: cade
+
