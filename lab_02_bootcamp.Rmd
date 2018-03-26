@@ -6,24 +6,6 @@ output:
   html_document:
     toc: yes
 ---
-# Overview
-
-R is a command-line interface that forces you to program your own analyses in a script. While this can be initimidating at first, it pays quickly to learn how to script your analyses when you have to redo your analysis if you discover a mistake, provide documentation, transparency and reproducibility of analyses, perform similar workflows, or perform batch prcessing. 
-
-On the surface, this lab appears long with a lot of homework questions. **Don't freak out!** Consider this your crash course in learning R as a programming language. It is a little like when you took a foreign language in high school, and the first couple of weeks you spent all your time memorizing vocabulary and conjugations. This is what we are doing here. Take your time, and go through all of the steps. Make sure you can answer all of the questions, and the logic behind it makes sense. If you can get comfortable with the material in this lab, you will soon be ready to start analyzing real data with R!
-
-## How These Tutorials Work
-Because we are working with open source software, there are far more useful and varied examples online than we can possibly cover in this class. Part of learning open source software is by reading different turorials, blog posts, and other resources. I will post required and suggested reading, but you should consider these as springboards only. With a little bit of internet research, you can acheive far more than what these basic tutorials cover.
-
-Sometimes I will give you instruction and examples in these tutorials, and sometimes I will point you to other online tutorials that you will have to complete. Note the learning objectives for each tutorial. These will be part of the overall course objectives, and will be covered in exams. 
-
-## Homework Assignments
-For each homework assignment I will ask you document your code using notebooks in R markdwon.
-
-In each section, if the text is
-
-><span style="color:CRIMSON;">CRIMSON like
-this it indicates a prompt for a question that you *must* answer or a product you must turn in for your homework. Crimson blocks of text are action items for you!</span> 
 
 # Objectives  
 After this tutorial, you should be able to:  
