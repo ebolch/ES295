@@ -170,7 +170,7 @@ Single-stepping through your code is an important trick, and R provides nice fun
 #### Using `R Browser`
 
 First is the function `debug()`:
-```{r}
+```{r eval =F}
 ?debug
 ```
 If you call debug on a function you've written, when you execute that function, R will enter the browser and allow you to step through the function line by line.
@@ -184,64 +184,64 @@ findruns(c(1,0,0,1,1,0,1,1,1),2)
 We are now in browser mode. Note the prompt says `Browse[2]>` We will now step through the function one line at a time and test to see what's going on.
 
 The first line was simply the function call.  We want to make sure we entered `x` correctly, so type `x` at the Browse prompt:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 x
 ```
 Let's also make sure k was entered correctly, 
-```{r echo=FALSE, results="hide, message=FALSE"}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 k=2
 ```
 
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 k
 ```
 Yep, good to go. Type `n` to go to the next line:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 n
 # And again:
 n
 ```
 Let's print `n` and confirm that the variable `n` is indeed the length of `x`.  
 Remember to wrap this in a print line:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 print(n)
 ```
 Notice that `R` tells you the NEXT line it will execute each time you hit `n`.  
 Go to the next line:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 n
 ```
 This is the beginning of our loop.  Let's enter the loop:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 n # and again, but first notice that the next line is to assign i.
 n
 ```
 Let's look at `i` and make sure that it began at the right value:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 i
 ```
 Yep, it started at location #1.
 
 Now, before we move forward, let's make sure our if statement is working by breaking it into pieces.  This line is supposed to take a subsection of `x` ranging from the current position `i`, running a length of `k`.  In this case, `k` is `2`, our current index is `1`, so the indexes should be `1:2`, so the subvector should be `1 0`:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 x
 ```
 Did this work?  Confirm it!
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 x[i:i + k - 1]
 ```
 *Nope!*  This didn't return two values, just one.  Let's look and see if the index itself is the problem:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 i:i + k - 1
 ```
 That's not right, it should be `1 2`.  Let's make sure `i` and `k` are right:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 i
 k
 ```
 Yep, they are right.  Ok, so our indexing is wrong.  Oops, we forgot
 about operator precendence!  Let's see if this works:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 i:(i + k - 1)
 ```
 Ah hah!  Ok, let's stop the browser right there, fix our code, and
@@ -270,11 +270,11 @@ findruns(c(1,0,0,1,1,0,1,1,1),2)
 #### Setting the breakpoint
 
 We are now going to use a "breakpoint" so we don't have to step through the beginning of the code again, since we know the first part works up until it enters the loop.  There are two ways to do this, insert the function `browser()` within the function, or use setBreakpoint() on the file.
-```{r}
+```{r, eval= F}
 ?setBreakpoint
 ```
 Now we'll set at breakpoint at line 5 in the code:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 setwd("/Users/elhestir/teaching/591_s17/labs") # set your wd to where you have saved the .R script
 ```
 First source the file:
@@ -286,25 +286,25 @@ setBreakpoint("findruns.R",7)
 findruns(c(1,0,0,1,1,0,1,1,1),2)
 ```
 This stopped on the`if(...)` line.  Test `i` and `k`:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 i
 k
 ```
 Now test our modified subvector:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 x[i:(i+k-1)]
 ```
 Yay!  That's right!
 Go to the next iteration using `c`:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 c
 ```
 Test `i`:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 i
 ```
 Great, it iterated.  Now our index:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 x[i:(i+k-1)]
 # Compare to the full vector:
 x 
@@ -334,19 +334,19 @@ findruns <- function(x,k)
 findruns(c(1,0,0,1,1,0,1,1,1),2) 
 ```
 Ok, check `i`, which should be at the last iteration:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 i
 ```
 Wait a minute... what did x look like again?
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 x
 ```
 Uh oh, `x` is 9 elements long, so really should have stopped at 8, not at 7.  Let's take a look at `n-k`:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 (n-k) 
 ```
 Yep, its 7.  This, however, would work:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 (n-k+1)
 ```
 Ok, let's `Quit` out of the browser, mod the code again, and test it:
@@ -403,17 +403,17 @@ tryCatch and try are functions for handling errors and warnings. Read the descri
 *try() gives the ability to continue executing a statement and ignore errors that are present.
 *tryCatch() les you specify handler functions that control what happens when a condition is signalled.
 
-```{r}
+```{r, eval= F}
 ?tryCatch
 ?try
 
 ```
-><span style="color:CRIMSON;">7. What is the difference in these two functions, and when might each be best used? </span>
+><span style="color:CRIMSON;">8. What is the difference in these two functions, and when might each be best used? </span>
 
 ## Examples
 try() allows execution to continue even after an error has occurred. For example, normally if you run a function that throws an error, it terminates immediately and doesn't return a value:
 
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 f1 <- function(x) {
   log(x)
   10
@@ -422,7 +422,7 @@ f1 <- function(x) {
 f1("x")
 ```
 If you wrap the statement that creates the error in try(), the error message will be printed but execution will continue:
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 f1 <- function(x) {
   try(log(x))
   10
@@ -441,16 +441,17 @@ class(success)
 class(failure)
 ```
 The try function can be exteremely helpful when applying a function to multiple elements in a list.
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 elements <- list(1:10, c(-1, 10), c(TRUE, FALSE), letters)
 results <- lapply(elements, log)
 
 ```
-```{r}
+
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 results <- lapply(elements, function(x) try(log(x)))
 ```
 There isn't a built-in function to test for the try-error class, so we'll define one. Then you can easily find the locations of errors with sapply().
-```{r}
+```{r echo=FALSE, results="hide, message=FALSE", eval = F}
 is.error <- function(x) inherits(x, "try-error")
 succeeded <- !vapply(results, is.error, logical(1))
 
@@ -482,9 +483,78 @@ tryCatch() is a general tool for handling conditions: in addition to errors, you
 
 
 ```
-#References
 
+# Remote Sensing Functions
+The remainder of this assignment will require reading in these 5 files. They are were taken from the USGS Base Spectral Library Version 7:https://speclab.cr.usgs.gov/spectral-lib.html
+
+1. Fescue wheatgrass
+2. Leafy Spurge
+3. Lichen Acarospora
+4. Oak
+5. Spartina Alterniflora
+
+## Looping vs. Vectorized solution
+
+Last time we discussed for-loops and vectorized solutions. While for-loops are common in programming, R is quite slow for looping and instead the ```apply()``` family. Which provides a faster and cleaner loop when reading in multiple text files?
+
+><span style="color:CRIMSON;"> 9. Use a for-loop to read in the 5 txt files listed above. Then use `system.time()` to measure the time elapsed for this solution.</span>
+
+
+><span style="color:CRIMSON;">10. Use a vectorized solution to read in the 5 text files above. Then use `system.time()` to measure the time elapsed for a vectorized solution.</span>
+
+
+## Vegetation Indices
+### Narrowband vs. broadband. 
+Narrowband indices are those that are developed for hyperspectral instrumentation. You might be more familiar with broadband indices such as NDVI or EVI, which are used for satellite imagery. In this section, you will calculate the values for three narrowband indices (NDVI, OSAVI, MCARI) using the txt files provided.
+
+Note all equations and several other broadband and narrowband indices are listed in Agapiou et al. 2012
+
+Index Name | Equation | Citation
+------------- | ------------- | -------------
+NDVI (Normalized Difference Vegetation Index) | $$ \frac{(p800−p670)}{(p800+p670)} $$ | Rouse et al. 1974
+OSAVI (Optimized Soil Adjusted Vegetation Index) | $$ \frac {1.16(p800−p670)}{(p800+p670+0.16)}  $$ | Rondeuax et al. 1996
+MCARI (Modified Chlorophyll Absorption Ratio Index)  | $$ \frac{(p850−P730)−0.2(p850−P570)}{p730} $$ | Daughtry et al. 2004
+
+
+><span style="color:CRIMSON;">11. Write a function or series of functions for the above listed Vegetation Indices. Then use a vectorized solution to apply each to the 5 spectral profiles.</span>
+
+
+## Debug a function (Separability Index) 
+><span style="color:CRIMSON;">12. Debug the following function and use a vectorize solution to the spectral profiles .</span>
+
+We can determine rough estimates of how separable two classes are based on their
+spectral properties. Low separability means two classes are very similar spectrally and may not
+be accurately distinguishable.For two classes with band means A and B, and
+standard deviations sa and sb, we can determine the normalized difference separability index
+sometimes called the M-Statistic
+
+M= (A – B) / (sa + sb)
+
+```{r}
+
+```
+
+
+
+## Make a publication quality figure
+
+><span style="color:CRIMSON;">13. Use ggplot to make a publication quality figure that has all 5 vegetation spectra on a single plot. Color each spectrum separately and include a legend. Save your plot as a png and upload it to catcourses. If you are unsure of the requirements for a publication quality figure, review the requirements for publishing in Remote Sensing of the Environment. </span>
+
+
+
+# References
 Advanced R by Hadley Wickham. http://adv-r.had.co.nz/
 
+Agapiou, A.; Hadjimitsis, D.G.; Alexakis, D.D. Evaluation of broadband and narrowband vegetation indices for the identification of archaeological crop marks. Remote Sens. 2012, 4, 3892–3919.
 
+Daughtry, C.S.T.; Walthall, C.L.; Kim, M.S.; de Colstoun, E.B.; McMurtrey, J.E. Estimating corn
+leaf chlorophyll concentration from leaf and canopy reflectance. Remote Sens. Environ. 2000, 74,
+229–239. 
+
+Rondeaux, G.; Steven, M.; Baret, F. Optimization of soil-adjusted vegetation indices. Remote
+Sens. Environ. 1996, 55, 95–107
+
+Rouse, J.W.; Haas, R.H.; Schell, J.A.; Deering, D.W.; Harlan, J.C. Monitoring the Vernal
+Advancements and Retrogradation (Greenwave Effect) of Nature Vegetation; NASA/GSFC Final
+Report; NASA: Greenbelt, MD, USA, 1974.
 
