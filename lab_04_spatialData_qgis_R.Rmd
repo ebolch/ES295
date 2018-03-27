@@ -1,0 +1,431 @@
+---
+title: 'Lab 4: Spatial Data in QGIS and R'
+author: ""
+date: 
+output:
+  html_document:
+    toc: yes
+---
+
+Note: the following is reproduced from **Remote Sensing and GIS for Ecologists: Using Open Source Software (Data in the Wild)** 
+Chapter 3 *Where to Obtain Spatial Data?* by Benjamin Leutner & Martin Wegmann
+Chapter 4 *Spatial Data Analysis for Ecologists: First Steps* by Benjamin Leutner, Martin Wegmann, Mirjana Bevanda and Ned Horning. 
+
+#Overview
+Whenever you first start working with new spatial data you should *always*:  
+
+1. Display your data
+2. Check your projection
+
+#Objectives
+
+* Name several sources to access free, open source spatial data
+* Open and display spatial data in QGIS
+* Open and display spatial data in R
+* Perform on-screen digitization using QGIS 
+* Import and export spatial data using open source software
+* Download satellite data products and visualize search results from the USGS Earth Explorer website
+* Explain the different processing levels associated with satellite data 
+
+#Obtaining Spatial Data 
+
+Some basic spatial datasets are available with R software. Use the `raster::getData()` command to query some freely available datasets and download them into R.
+
+There are a lot of neat datasets available with the `getData()` command, such as climate variables and elevation data.
+
+For example, we can download precipitation data from WorldClim (http://worldclim.org), which provides global climate layers at different spatial resolutions, including 0.5, 2.5, 5, or 10 degrees.
+
+```{r, eval=FALSE}
+library(raster)
+prec <- getData("worldclim", var = "prec", res = 2.5) 
+# note that precip() is a dataset name in the R base distribution, so we want to be careful not to assign our object that name
+names(prec) <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+head(prec)
+
+# Plot all months 
+plot(prec)
+
+# Plot just January
+plot(prec,1) #January
+```
+
+You can save the downloaded data to your hard drive using `writeOGR()` for the GADM polygons, or `writeRaster()` for the climate data.
+
+```{r}
+?writeOGR
+?writeRaster
+```
+
+##Dealing with Landsat Data
+
+Landsat data are distributed in scenes, that are divided into paths and rows. You can find the vector data of Landsat paths and rows from the USGS website: https://landsat.usgs.gov/pathrow-shapefiles
+
+Landsat (and other satellite datasets) are processed to several levels by the USGS. The processing levels for Landsat are currently changing. Read about the lastest processing levels and conventions here: https://landsat.usgs.gov/landsat-data-access
+
+**Note** that surface reflectance products are only served on demand. This means the USGS does not process the satellite data to surface refletance until you place an order. This typically takes 1-5 days to process. 
+
+##Downloading Data from Earth Explorer
+
+You have seen in-class demos of using the USGS Earth Explorer website to download free and open access remote sensing data. Now it is your turn! 
+
+Login into http://earthexplorer.usgs.gov/ with your EROS data center account.
+
+Next, let's download some Landsat data for the Amazon rainforest, a place we have been reading a lot about!
+
+In Earth Explorer, navigate to Lat: 04&deg 20' 23" S ; Lon: 050&deg 04' 17" W
+
+For now, just leave the date range as is, but note that you can easily select specific years or months that you are interested in.
+
+Afetr the date field, you will be asked which data sets to search for. For now, we are intersested in data that has already been calibrated and atmopsherically corrected. Navigate to Landsat Archive > Pre-Collection and select Landsat surface reflectance for Landsat 8, 7, and 4-5.
+
+![Data set selection in Earth Explorer ](ee_data.png)
+
+The Additional Criteria tab allows you to filter your data selection further by information such as cloud cover and processing level.
+
+The result of our selection is a list of all of the Landsat scenes that overlap with our location. You have to go through the previews of all the images to look for suitable ones. You can use the different icons to project a selected scene onto a map, view metadata, and order your image. Your scene can be ordered by clicking on the basket icon and then proceeding to the checkout. Once you have placed your order, you will receive several emails informing you of the status of your order. 
+
+*Note* for the purposes of this lab, I have downloaded two scenes for you, and placed them on the moodle, so that you do not have to order them and wait for them to be processed.
+
+##Visualizing Data Availability in R
+
+As you can see, there are a lot of possible scenes available. Before downloading them, sometimes it is good to look at the meta data. You can get a better idea of how many scenes are present at what cloud cover, etc.
+
+To download the meta data, select the metadata export button in Earth Explorer at the top of your scene list. You will have to do this for each of the sensors in the drop down menu.
+
+![Export of the data list as a ".csv" file](export_results.png)
+
+The files you download from your emails need to be unzipped. We can do that following:
+```{r}
+zipfiles <- list.files(path = "lab4", pattern = ".zip", full.names = TRUE) #note I'm pointing to my sub directory. Make sure you change it for you!
+# Unzip all files and return the file paths in a list
+eeResults <- lapply(zipfiles, unzip, exdir = "lab4")
+eeResults
+```
+
+Now we can import these data using `read.csv()`. Look at the following function. All I am doing in reading in certain parts of the csv file and rearranging it to make it a bit more plotting friendly.
+
+```{r}
+read.ee <- function (x) 
+{
+  llee <- lapply(x, function(ix) {
+    df <- read.csv(ix, stringsAsFactors = FALSE, quote = "", 
+                   fileEncoding = "latin1")
+    names(df)[names(df) == "Scene.Cloud.Cover"] <- "Cloud.Cover"
+    allLScats <- c("Landsat.Scene.Identifier", "WRS.Path", 
+                   "WRS.Row", "Data.Category", "Cloud.Cover", 
+                   "Day.Night", "Date.Acquired", 
+                   "Sun.Elevation", "Sun.Azimuth", "Geometric.RMSE.Model.X", 
+                   "Geometric.RMSE.Model.Y", "Display.ID", "Ordering.ID")
+    df <- df[, allLScats]
+    df$Date <- strptime(df$Date.Acquired, "%Y/%m/%d")
+    df$Doy <- as.numeric(strftime(df$Date, format = "%j"))
+    df$Year <- as.numeric(strftime(df$Date, format = "%Y"))
+    df$Satellite <- paste0("LS", substr(df$Landsat.Scene.Identifier, 
+                                        3, 3))
+    df$Num <- as.numeric(substr(df$Landsat.Scene.Identifier, 
+                                3, 3))
+    df
+  })
+  out <- do.call("rbind", llee)
+  return(out)
+}
+
+#now run the function on our list of csv files
+
+eeResults <- read.ee(eeResults)
+```
+
+Now we can plot the available Landsat scenes throughout the year using the `ggplot2` package.
+
+**Note!** Don't worry too much about the syntax of the ggplot2 package. It is a little confusing at first, but once you get the hang of it, it is REALLY powerful. We will spend more time with `ggplot2` later in the semester.
+
+```{r}
+require(ggplot2)
+ggplot(subset(eeResults, Cloud.Cover < 95)) +
+  geom_tile(aes(x = Doy, y = Year, alpha = Cloud.Cover, fill = Satellite), width = 2, size = 2) +
+  scale_y_continuous(breaks = c(1984:2017)) +
+  scale_alpha_continuous(name = "Cloud Cover (%)", range = c(1,0.75))
+```
+
+><span style="color:CRIMSON;">1. Make a figure showing the data availability for Landsat surface reflactance from USGS with cloud cover < 20%. Turn it in with your asisgnment (insert into a power point or word doc or other). What can you say about the potential for bias when analyzng a time series of Landsat data in the Amazon? </span>
+
+
+#Importing and Displaying Data with QGIS
+
+Importing data is supes simple in QGIS. You can just drag and drop it into the window, or you can import them via the menu bar, choosing eith "add vector" or "add raster". For shapefiles, select the .shp extension. 
+
+Once you have imported new layers in QGIS, they show up in the *Layers* pane, where they can be turned on and off and reordered. The upper layers are on top.
+
+## Commonly used menus
+ 
+If you right click on a layer in the *Layers* pane, you can access the *Properties* window, which keeps track of your layer's metadata and allows you to choose which bands to combine in RGB color composites.
+
+><span style="color:CRIMSON;">2. What do each of the numbered QGIS menu buttons below do?</span>
+
+
+![Menu bar for loading data into QGIS](openfile.png)
+
+><span style="color:CRIMSON;">3. Download the descending WRS 2 Landsat path/row shapefile from the USGS and display it in QGIS. Provide a screenshot of your results.</span>
+
+You can also interact with your data, move around and visualize it. 
+
+><span style="color:CRIMSON;">4. What do each of the numbered QGIS menu buttons below do?</span>
+
+![Navigation bar for QGIS](navigate.png)
+
+><span style="color:CRIMSON;">5.Which one of the following menu buttons is a spatial bookmark? What is it, and why is it so handy?</span>
+
+![Spatial query menu bar for QGIS](querypane.png)
+
+><span style="color:CRIMSON;">6. Display a true color image of the 2011 Landsat image from the Amazon, and a color-infrared image from the Amazon side by side. Publish your map and turn it in with your assignment. What do you think is causing the herringbone pattern we see in the forested areas of the image?</span>
+
+## Importing GPS Data
+
+A common GIS need is to import your GPS data collected during field work into your software. If you data are already in the common *.gpx* format, you can use the standard vector import in QGIS. If you need a more detailed import with file custmization, you can use the *GPS tool* plug-in. This plug-in can directly connect to many GPS devices, and can read and convert a variety of GPS file formats. 
+
+><span style="color:CRIMSON;">7.Install the *GPS tool* plug-in</span>
+
+## Importing Text Files
+
+Sometimes you don't have a digital GPS file, you only have a list of coordinates. Then you need to take a few extra steps to create a sptial object. 
+First, organize your data in a spreadsheet format with X and Y coordinates (one row per coordinate pair) and your corresponding measurements.
+
+![Example of spreadsheet organization](latlong.png)
+
+Use the import .csv function in QGIS to import delimited text files (like a *.csv* file from a spreadsheet). Usually the import function automatically identifies the coordinate columns, but CONFIRM the correct columns are selected!
+
+Next, you will be prompted to specify the projection. **This is the most important step.** If you don't know what projection your data have, go check your device settings or data provider. *Do not guess.* If your data don't align prperly later, it is likely you messed this part up. 
+
+![Importing a csv text file to create a vector layer](delim.png)
+
+*Note!* If you have set the overall project projection of your current QGIS session before importing the .csv file, for example, by right-clicking on an existing georeferenced layer and selecting `set project CRS from layer` this projection will already be selected as the default selection. This however, is offered just for convenience and does not mean that QGIS has figured out the right projection automatically because that is impossible. It is still up to you to double check the projection.
+
+You should now see the import in the *layers* list. However, if you check the properties, you will see it is still a csv file, which will be lost if you close your QGIS session. Therefore, you need to save it as an ESRI shapefile prior to closing by right clicking on the layer and selecting `Save As...`
+
+## Digitizing New Data
+
+Another common GIS task is to generate new vector layers manually. This is referred to as *on-screen digitization*. For example, you may want to digitize features from a scanned geological map to use them in a GIS analysis. Or, you may want to idenitfy roads or waterways from satellite imagery. 
+
+Perhaps most commonly, people use on-screen digitization to create training or validation data for supervised classifcation of remote sensing imagery. So, instead of going out into the field with a GPS unit, sometimes scientists use high spatial resolution satellite imagery to create points or polygons of different land cover classes (e.g., forest, bare earth, grassland) and then use the underlying pixels to train and validate statistical classifiers applied to coarser resolution imagery.  
+
+QGIS can be very handy for on-screen digitization because it is an interactive process that requires a lot of panning and zooming. 
+
+1. Select vector type
+To perform on-screen digitization, we first need to decide whether we want points, lines, or polygons. Points are good for specific plots, pixels, or samples. Lines are suitable for digitizing roads. Polygons are good if we want to represent an area.
+
+2. Create empty layer
+Next, create an empty vector layer by selecting `Layer` > `Create Layer` > `New Shapefile Layer`. In this menu, set the type of vector layer, as well as the projection and the content. Add as many columns as you will have attributes to provide. The `Width` refers to the amount of information that can be added to a column. For example, a width of one would allow only one number or character to be entered into that field. `Precision` is only needed for decimal data: it defines the number of decimal points. 
+
+Save the new, empty vector file. It will then show up in our layer list to the left.
+
+3. Start `edit` mode and add features
+Activate the `edit mode` button and add new features using a left-click. A righ-click finishes a feaure (for polygons and lines). A pop-up window will appear and attributes for each new feature can be added.
+
+><span style="color:CRIMSON;">8. Your goal is to create a new image acquisition request to the European Space Agency for a study encompassing the Australian continent. The comma-separated file "meris_lat_long_image_catalog.csv" is an image catalog of all the MERIS data on my computer. It holds the geographic information of the center of each scene, and tell me the full file path of each image file. Create an ESRI shapefile of the .csv file, and display it in QGIS with a Google Satellite Image in the background. Create a new polygon vector layer indicating a region in Australia with poor data coverage where you would like to increase coverage. Use the open Google Satellite layer as a background. Publish your map and turn it in with this assignment. </span>
+
+# Spatial Data in R
+
+## The `raster` package
+
+The workhorse package for remote sensing images in R is the `raster` package. Anytime you start working with a new package in earnest, it is always a good idea to start with looking at the CRAN and carefully reading any documentation provided.
+
+At a minimum there will be a manual that provides the documentation for every function and dataset in the package. You should always browse the manual to learn what functions might be of use to you, and what the general use syntax is for that package. If you're lucky, someone may have written a vignette for their package. This is like a tutorial that will take you through the basic functionality of their functions and hopefully will give you some insights and tips on how to most effectively use the package.
+
+><span style="color:CRIMSON;">9. Browse the `raster` manual and the accompanying vignette in the CRAN. Describe two functions provided by the package that seems particularly useful or relevant to you and why. </span>
+
+## Importing Raster Data
+
+There are three different fucntions for reading raster data into `R`, for which each has its own use-case:
+
+1. `raster()` - for a single layer raster. Creates an object of class `RasterLayer`
+
+2. `brick()`  - for multiple layers from a single file (e.g., a multilayer GeoTIFF). Creates an object of class `RasterBrick`
+
+3. `stack()`  - for multiple layers from multiple seperate files (e.g., 12 GeoTIFF files from a Landsat download). 
+
+><span style="color:CRIMSON;">10. Can you predit what kind of object class `stack()` returns? </span>
+
+Note! You can only stack layers with the same spatial resolution and extent. So, your pixels must line up perfectly. 
+
+* **Extent** is defined by the rectangle encompassing the raster (4 corners)
+
+><span style="color:CRIMSON;"11. What is the spatial resolution? </span>
+
+* **Origin** is the closest point to 0/0 you can acheive when you go from the raster in steps of X and Y pixel resolution towards 0/0.
+
+We are going to start by importing the 2011 Landsat file over the Amazon. Landsat data are delivered in a separate GeoTIFF for each band. To load a single band, we can do the following:
+
+```{r}
+require(raster)
+L52011 <- raster("lab4/LT52240632011210/LT52240632011210CUB01_B1.TIF")
+# print the object to get a summary of values
+L52011
+```
+
+The `raster()` command can also be used to access single layers from multiband files, by sepcifying the band argument. 
+
+To import all the layers we could load each band separately and then use the `stack()` function to make a multiband raster like this:
+
+```{r}
+tmp1 <-  raster("lab4/LT52240632011210/LT52240632011210CUB01_B1.TIF")
+tmp2 <-  raster("lab4/LT52240632011210/LT52240632011210CUB01_B2.TIF")
+tmp3 <-  raster("lab4/LT52240632011210/LT52240632011210CUB01_B3.TIF")
+# etc....
+L52011 <- stack(tmp1,tmp2,tmp3)
+```
+
+But that is pretty time consuming and clunky (and results in many lines of code, which we agreed is a bad thing!)
+
+Instead, let's make a list of all the files matching a given pattern and load them all in one go with `stack() which can take a *list* as an input.
+
+```{r}
+allBands <- list.files("lab4/LT52240632011210", pattern = "TIF", full.names = TRUE)
+allBands
+L52011 <- stack(allBands)
+L52011
+```
+
+As we can see in the summary, the automatically created names are long and redundant. So let's change them. We can query and change layer names using `names()`. Here, we are going to remove the scene ID and search and replace:
+
+```{r}
+names(L52011) <- gsub(pattern = "LT52240632011210CUB01_", replace = "", x = names(L52011))
+L52011
+```
+
+Now that we have all the bands in a single RasterStack, we could save it as a multi-band GeoTIFF file on our hard disk with:
+
+```{r, eval = FALSE}
+writeRaster(L52011, filename = "raster_data/L52011.grd")
+```
+
+**In general, this is not advisable***
+
+Although we talked about "importing the file", the raster package does not actually import the file. Rather, it reads some of the meta-data and the path to that file. This is necessary because remote sensing datasets tend to be bigger than the memory available on most personal computers. 
+
+Once we perform a calculation on such a raster object, R will load smaller chunks, or tiles, into memory. 
+
+```{r}
+inMemory(L52011)
+```
+
+There are other ways to read in rasters into R, and there are other raster classes, such as `SpatialPixelsDataFrames` and `SpatialGridDataFrames` in the `sp` package. These load raster into memory, so I reccomend staying away from them.
+
+## Exporting Raster Data
+
+Because you are actually just pointing to files with `raster()`, saving them is tricky. You don't want to use functions like `save()` or `saveRDS()` because again, your raster objects are just links to files. If you move your files, or delete them from your temp directory, the link will break and the object will become unusable. So, make sure to use `writeRaster()` instead.
+
+## File Formats
+
+There are several options for chossing a file format:
+
+```{r, eval = FALSE}
+?writeFormats
+```
+
+The defailt setting for `raster` comes with a header file (.grd) containing info like the projection and layer names, and a binary file (.gri) containing the actual data. 
+
+If you're doing all of your work in R, use the default format. It will keep track of your layer names.
+
+If you're going to switch between different GIS systems a lot, use GeoTIFF format. It will not keep track of your layers names, and reading and writing is a bit slower, but GeoTIFF is the universal format for most GIS software systems.
+
+## Data Types
+
+```{r, eval = FALSE}
+?dataType
+```
+
+><span style="color:CRIMSON;"12. Read the documentation for raster data types. There are several to choose from, and in some ways, we can consdier data type kind of like radiomateric resolution in that they represent how many different permissable value ranges a file can have. In 3-5 sentences, discuss the tradeoffs between data precision and file size. Provide one example of a type of raster file that INT1U would be acceptable, and one where INT1U would NOT be acceptable.</span>
+
+# Importing Vector Data
+
+Spatial vector data rely on classes from the `sp` package. The primary classes are:
+
+* SpatialPoints
+* SpatialLines
+* SpatialPolygons
+
+Each of these also hold an attribute table (a data frame) with further information associated with each vector element. 
+
+There are many different packages you can use to import spatial vector data, but I reccomend `rgdal::readOGR()` because it supports almost all relevant file formats, imports directly into the `sp` classes, and does a pretty good job with importing projections.
+
+The syntax of `readOGR()` depends on the file you want to read. For shapefiles, you should provide the path data source name (DSN) and the file basenme (layer) separataely. So the basic syntax will look something like this:
+
+```{r, eval = FALSE}
+vec <- readOGR(dsn = "path/to/directory", layer = "myShapefile")
+# note that we don't gove the file extension
+```
+
+><span style="color:CRIMSON;"13. Import your MERIS data availability shapefile into R and plot it. Provide a screen capture of your plot.</span>
+
+## CSV data
+
+Often you have a text file with X and Y coordinates and some columns of data. Similar to QGIS, these can be loaded into R and converted to a spatial object.
+
+First load the .csv file you downloaded from the moodle page.
+
+```{r}
+my.csv <- read.csv("lab4/csv_file_locationdata.csv")
+my.csv
+```
+
+We know this is point data, so let's convert it to a SpatialPoints object:
+
+```{r}
+csv.sp <- SpatialPoints(coords = my.csv[,c("X","Y")])
+csv.sp
+```
+
+As you can see, the object doesn't have any values associated with it, just the coordinates. So now we have to build a SpatialPointsDataFrame that holds the data values in columns 3-5 in an attribute table.
+
+```{r}
+csv.spdf <-  SpatialPointsDataFrame(my.csv[,c("X","Y")], data = my.csv[3:5])
+csv.spdf
+```
+
+Here is an even better shortcut:
+
+```{r}
+class(my.csv)
+coordinates(my.csv) <- c("X", "Y")
+class(my.csv)
+```
+
+Now that we have the spatial data structure, all we have left is to define the projection. For now, let's just query another spatial object that has the same projection. To get and set projections of spatial objects, we use `raster::projection()`:
+
+```{r}
+projection(csv.spdf) <- projection(L52011)
+```
+
+## Exporting Vector Data
+
+The most portable file format for spatial vector files is the ESRI shapefile format. We use `writeOGR()` which is very similar to `readOGR()` except you also need to specify the write format:
+
+```{r, eval = FALSE}
+writeOGR(csv.spdf, dsn="lab4", layer="csv_spdf_as_shp", driver = "ESRI Shapefile")
+# or if you want a Google Earth format:
+writeOGR(csv.spdf, dsn = "lab4/csv_spdf_as_kml.kml", layer = "mylayername", driver = "KML")
+```
+
+# Plotting Spatial Data in R
+
+```{r}
+# Plot all bands separately
+plot(L52011)
+# Plot only the 5th layer
+plot(L52011, 5)
+# Change the color palette 
+plot(L52011, 5, col=grey.colors(100))
+# Set layer transparency to 50%
+plot(L52011, 5, alpha = 0.5)
+# plot multiple bands
+plotRGB(L52011, r = 3, g = 2, b = 1)
+```
+
+If your RBG plot is very dark or even black, it is likely because the majority of your pixel values are very low. For example, if the median of your bands 1-2 is 0.025, but your RGB color calculation is done for a raneg of 0 to 1.  You can increase the contrast of your image using stretch methods. 
+**This does not change you data, just the display of data**
+
+```{r}
+plotRGB(L52011, r = 3, g =2, b = 1, stretch = "lin")
+```
+
+><span style="color:CRIMSON;"14. Plot a color-infrared image of your Landsat scene with a nice stretch that enables good visualization. Overlay the csv.spdf spatial vector file you made onto the image (Hint: in the plot() argument, use add=TRUE).</span>
