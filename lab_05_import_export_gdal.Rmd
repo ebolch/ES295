@@ -1,0 +1,454 @@
+---
+title: "lab_05_import_export_gdal"
+output: html_document
+---
+Note: the following is reproduced from **Remote Sensing and GIS for Ecologists: Using Open Source Software (Data in the Wild)** 
+
+Chapter 4 *Spatial Data Analysis for Ecologists: First Steps* by Benjamin Leutner, Martin Wegmann, Mirjana Bevanda and Ned Horning. 
+Chapter 5 *Pre-processing Remote Sensing Data* by Benjamin Leutner & Martin Wegmann
+
+#Overview
+Whenever you first start working with new spatial data you should *always*:  
+
+1. Display your data
+2. Check your projection
+
+#Objectives
+
+# Indexing Raster Data in R
+
+Now that we know how to import and plot spatial data, let's work on getting to the actual data values in spatial objects.
+
+
+Think of a RasterLayer as a *matrix* and a RasterStack or RasterBrick as a *list* or *array* of multiple *matrices*.
+
+![How to address pixels in raster objects](raster_scheme.png)
+
+## Indexing RasterLayers
+
+So, let's start again with our Landsat image. We will begin with a single RasterLayer. Remember, this is like a matrix, so it has rows and columns and we can query it with our trusty `[row,column]` 
+
+```{r}
+require(raster)
+#Make sure to get and set your working directory correctly!
+allBands <- list.files("lab4/LT52240632011210", pattern = "TIF", full.names = TRUE)
+allBands
+L52011_B1 <- raster(allBands[1])
+# use good spatial data practices. Print and plot your data for a sanity check
+L52011_B1
+plot(L52011_B1)
+# now, let's index the first row
+values <- L52011_B1[1,]
+head(values)
+# index the second column
+values <- L52011_B1[,2]
+head(values)
+# index columns 7 to 300
+values <- L52011_B1[,7:300]
+head(values)
+```
+
+Ok. Not too bad. Seems pretty familiar, huh? 
+
+><span style="color:CRIMSON;">1. How would you index a single pixel? Provide the command.</span>
+
+In addition to rows and columns, every pixel has a unique cell ID that is used when you query **without** a comma. 
+
+*Note* that cell IDs for raster objects increase first from left to right and then from top to bottom. This is DIFFERENT from normal R matrix indexing which runs from top to botton first.
+
+```{r}
+L52011_B1[c(3141,5926)]
+```
+The syntx expands naturally to select all pixels in the same way you would address all values in a matrix. So,
+```{r}
+values <- L52011_B1[,]
+```
+is equivalent to 
+```{r}
+values2 <- L52011_B1[]
+```
+
+><span style="color:CRIMSON;">2. Use R to prove to me that the above statement is correct (that `values` is equivalent to `values2`).</span>
+
+## Indexing RasterStacks
+
+Indexing RasterStacks and RasterBricks is similar to a list. You address layers with double brackets `[[ ]]`, which return a raster object, not just the pixel values.
+
+So, let's begin by making a RasterStack again
+```{r}
+L52011 <- stack(allBands)
+L52011
+L52011[[2]]
+```
+If you want to query more than one layer, you can use the double square brackets with either numbers of layer names, or `$` for single layers
+```{r}
+my.sub <- L52011[[1:3]]
+my.sub
+my.sub <- L52011[[c("LT52240632011210CUB01_B1", "LT52240632011210CUB01_B2")]] # remember we lose our layer names every time we read in a raster again
+my.sub
+my.sub <- L52011$LT52240632011210CUB01_B5
+my.sub
+```
+This is where we deviate from how this works with a list. 
+
+><span style="color:CRIMSON;">3. Fill in the blanks:
+Recall, if you index with a list for multiple entries, it requires single brackets, whereas if you index a raster with single brackets (e.g., L52011[c(1,3,7)], it will return ____________.</span>
+
+Querying pixels of a stack or a brick with single square brackets will return a matrix with one column per layer and pixels in rows:
+
+```{r}
+values <- L52011[3:7, 84]
+head(values)
+```
+
+### Removing and adding layers
+
+You can remove layers using negative indexing or the `dropLayer()` command.
+
+```{r}
+L52011.drop6.7 <- L52011[[-c(6,7)]]
+L52011.drop6.7
+# this is equivalent to
+L52011.drop6.7 <- dropLayer(L52011, c(6,7))
+L52011.drop6.7
+#this is equivalent to
+L52011.drop6.7 <- dropLayer(L52011, c("LT52240632011210CUB01_B6", "LT52240632011210CUB01_B7"))
+```
+
+You can also add layers. Let's say we want to apply a scaling factor to one of our bands. We will divide one band by 2 and add it back to our stack with `addLayer()`
+
+```{r}
+new.layer <- L52011[[1]]/2
+names(new.layer) <- "new"
+L52011.add <- addLayer(L52011, new.layer)
+L52011.add
+#this is equivalent to 
+L52011.add[["myNewLayer"]] <- new.layer
+```
+
+Now you should be ready to query an raster data value you might be interested in.
+
+><span style="color:CRIMSON;">4. How would you get layer 3, rows 4-8, and column 90 in your raster stack?</span>
+
+### Replacing values
+
+So, the real handiness in indexing layers is your ability to replace values. 
+
+In this example, let's start by making a copy of our raster so that if we mess it up, we don't have to go back and re-read everything in.
+
+```{r}
+layer.copy <- L52011[[5]]
+# let's check these values before we modify them
+layer.copy[70:71, 90:91]
+# now, let's replace two values with NA
+layer.copy[70:71, 90:91] <- NA
+layer.copy[70:71, 90:91]
+```
+To set all values in layerCopy to 0 we would do
+```{r}
+layer.copy[] <- 0
+```
+
+In the previous example we selected a specific location within a raster. What we more commonly want to do is select pixels of one raster given the values of another. This is sometimes called masking.
+
+In this example, we will create a mask of 1s and 0s to allow us to select all pixels with values smaller than 10 in the 5th band.
+
+First, let's create a binary raster that has two values, either `1` (TRUE) or `0` (FALSE). 
+```{r}
+query.raster <- L52011[[5]] < 10
+query.raster
+dataType(query.raster)
+```
+Now we have a logical raster that can be used to return all the pixels that satisfy the condition. That is, all the pixels that are TRUE:
+```{r}
+values <- L52011[query.raster]
+summary(values)
+```
+
+><span style="color:CRIMSON;">5. Set all values that are smaller than 10 in band 5 to NA in `layer.copy`. Show your results.</span>
+
+## Indexing Vector Data
+
+Let's go back to our `csv.spdf` vector file.
+
+><span style="color:CRIMSON;">6. Read your csv.spdf vector file from lab 4 into R (you should have saved it something like "csv_spdf_as_shp.shp".</span>
+
+Recall from lab 4 that Spatial Data Frames carry an attribute table in the *data* slot that can be accessed using `csv.spdf@data`.
+
+To access coordinates, use the same `coordinates()` function from lab 4 to construct the data frame:
+
+```{r}
+require(rgdal)
+csv.spdf <- readOGR(dsn = "lab4", layer = "csv_spdf_as_shp")
+coordinates(csv.spdf)
+```
+
+The attribute table corresponds directly to an internal feature ID and has the same order as the features. Hence, the 1st row in the data slot corresponds to the coordinates of the first feature.
+
+So, to access a single feature we use single square brackets `[ ]`. This is just like indexing a data frame, except that it returns a spatial object. *Note* the number of features changes as you subset the rows.
+
+Let's start by selecting the first row:
+```{r}
+sub.shp <- csv.spdf[1,]
+# Keep columns 1 and 3, but NOT the first row:
+sub.shp <- csv.spdf[-1,c(1,3)]
+```
+To return just the values of a column without the whole spatial object, but keep it in the right order, you can use `[[ ]] or `$`:
+```{r}
+sub.shp <- csv.spdf[["plot_name"]]
+# which is equivalent to
+sub.shp <-  csv.spdf$plot_name
+```
+
+# Coordinate Reference Systems and Data Projections
+
+Coordinate reference systems define yur map projections. They are key to making any spatial data work, and can be the trickiest part of GIS data processing. We won't go into detail about in in this course, but some understanding of CRS is key. Begin by reading this web page:
+
+http://docs.qgis.org/2.0/en/docs/gentle_gis_introduction/coordinate_reference_systems.html
+
+><span style="color:CRIMSON;">7. Identify a projection good for a small area, and for mapping an area with a large North-South extent.</span>
+
+><span style="color:CRIMSON;">8. What is the difference between a geographic (unprojected) and projected coordinate system? Can you name an application for each?.</span>
+
+Ensuring and checking spatial fit and conformity of projections is the first step in any data analysis. Always make this a priority when assembling data for a new project.
+
+## Projections
+
+Projections in R and QGIS are described by a character string that stores the paramters describing the projection and coordinate system in a specific format. It is called `proj4string` after the PROJ.4 library (http://proj4.org/). 
+
+For example, a geographic (unprojected) coordinate system is defined by the string:
+
+`+proj=longlat +datumWGS84`
+
+><span style="color:CRIMSON;">9. What is the projection of our study site?</span>
+
+Each projection is alos defined by a unique short code called the EPSG (European Petroleum Survey Group) code. For example, `init=epsg:32622` is the hort code for our study site UTM projection. To find more detailed information go to: http://spatialreference.org/
+
+### Error checking 
+
+One of the best ways to check if your projections are the same is when you plot them together and one layer does not show up, yet there is no error message.
+
+><span style="color:CRIMSON;">10. There are two shapefiles for this exercise. Protected Areas as defined by the UNEP (PAs_UNEP_WCMC_p224r63.shp), and roads (roads_p224r63_UTMsouth.shp). Read them into R. Try plotting the PAs and the roads using `plot(PA, col = "darkgreen", border = "gray")` followed by `plot(roads, add = TRUE)`. What happens? Why?</span>
+
+Let's look at this more closely:
+```{r, eval = F}
+projection (PA)
+projection(roads)
+as.vector(extent(PA))
+as.vector(extent(road))
+```
+
+## Reprojecting Spatial Objects in R
+
+Let's see if you can solve this problem using your growing R skills. 
+```{r}
+?spTransform
+```
+
+><span style="color:CRIMSON;">11. Can you reproject PAs to the roads projection? Show your code. Prove that this worked by plotting the two shapefiles.</span>
+
+## Reprojecting Raster Data in R
+
+Repojecting raster data is pretty similar to reprojecting vector data with one big and pretty serious differences. The new pixel locations might be forced to fit into a different grid orientation. This means you are resampling raster values and fundamentally changing your data.
+
+![Reprojecting raster data resamples your pixel values](raster_reproj.png)
+
+When you resample your raster data, you either:
+* calculate a weighted average of the closest surrounding pixels (typically 4 pixels). This can result in artificial data smoothing. This is also irreversible.
+* use a nearest naighbor value, selecting the value of the closest pixel to avoid averaging. This can result in overly pixelated data that is less correct.
+
+*If you have to choose between reprojecting vector data to match your raster projection and reprojecting your raster data to match your vector projection, you should ALWAYS opt for reprojecting a vector.*
+
+Reprojecting vectors is also computationally a lot faster.
+
+`spTransform()` works only with vector data. If we have to reproject rasters, we use `raster::projectRaster()`.
+
+```{r}
+?projectRaster
+```
+
+><span style="color:CRIMSON;">12. Can you reproject L52011 to the roads projection? Show your code. Prove that this worked by plotting the two shapefiles.</span>
+
+Chapter 5 *Pre-processing Remote Sensing Data* by Benjamin Leutner & Martin Wegmann
+
+#Objectives
+
+* Handle basic spatial data in R 
+* Extract values in a raster by spatial coordinates
+* Crop and mask raster data
+* Perform arithmetic and summaries on raster data
+
+#Spatial Queries: Extracting Values
+
+So far we know how to index a raster by layer, by cell, by row and by column. Now, let's learn how to query by spatial coordinates. This is the vector-raster process you are likely to use most often. 
+
+Essentially, what we are doing is extracting the pixel values bhind the location of vector points, lines, or areas.
+
+Let's query the Landsat pixel values corresponding to the `csv.spdf` SpatialPointsDataFrame we made in Part 1 using the function `raster::extract`
+
+```{r}
+# read in the vector file
+require(rgdal)
+csv.spdf <- readOGR(dsn = "lab4", layer = "csv_spdf_as_shp")
+# read in the raster file
+require(raster)
+allBands <- list.files("lab4/LT52240632011210", pattern = "TIF", full.names = TRUE)
+L52011 <- stack(allBands)
+# remember, sanity checks are important. Print and plot your spatial data when you open it.
+L52011
+plotRGB(L52011, r = 3, g = 2, b = 1, stretch = "lin")
+plot(csv.spdf, add = TRUE)
+# If we are happy everything lines up, let's try some extractions
+?extract
+ptVals <- extract(L52011, y = csv.spdf)
+head(ptVals)
+summary(ptVals)
+```
+
+><span style="color:CRIMSON;">13. What if we want to extract the pixels of the protected areas (`PA`) from only the first 4 layers? Show the command and summary of the results. Name your object `PAVals`.</span>
+
+## Extract Summary Statistics
+
+Now, let's say we want to calculate some summary statistics on the extraction. We could acheive this by using `lapply()` across `PAVals` list. Or we can tell extract to do it for us.
+
+```{r}
+PA <- readOGR(dsn = "lab5", layer = "PAs_UNEP_WCMC_p224r63")
+new.crs <- crs(L52011)
+PA <- spTransform(PA, new.crs)
+plotRGB(L52011, r = 3, g = 2, b = 1, stretch = "lin")
+plot(PA, border="yellow", add = TRUE)
+```
+
+```{r}
+PAVals.mean <-  extract(L52011, PA, fun = mean, na.rm = TRUE)
+```
+
+Because the order of the results corresponds exactly `(!)` to the order of the polygons, we can append theinformation to the data slot of the SpatialPolygonsDataFrame:
+
+```{r}
+PA@data <- cbind(PA@data, PAVals.mean)
+```
+
+Sometimes you don't want to extract a single pixel behind a point, but rather a buffer, in order to get a sense of the spatial variability around that point. In such instances, you can use a buffer argument in the `extract()` function.
+
+><span style="color:CRIMSON;">14. Determine the variability (standard devation) of all the pixels in a 500 m radius around the `csv.spdf` SpatialPointsDataFrame for band 4 of `L52011`. Provide the solution and your code.</span>
+
+### Plotting Extract Results
+
+Now, let's say you want to plot the variability of values in band 4 around each point in a box plot. Instead of summarizing your extract with a function, you can return all of the values:
+
+```{r}
+pts.sd <- extract(L52011[[4]], y = csv.spdf, buffer = 500)
+# convert results from a list to a dataframe using reshape2::melt()
+require(reshape2)
+pts.sd.df <- melt(pts.sd)
+head(pts.sd.df)
+boxplot(value~L1, pts.sd.df)
+```
+
+# Raster Processing: Cropping & Masking
+
+## Cropping
+Satellite images like our Landsat scene cover large areas, and are pretty big files. A lot of time we can crop our data to just our study extent for more efficient processing using `raster::crop()`
+
+Let's crop our Landsat scene to the extent of the Parakana PA. 
+
+```{r}
+# First, subset our SpatialPolygonsDataFrame
+parakan <- PA[PA$name == "Parakan"]
+# now, crop the Landsat scene to the protected area
+L52011_parakan <- crop(L52011, parakan)
+plotRGB(L52011_parakan, stretch = "lin")
+plot(parakan, border="yellow", add = TRUE)
+```
+
+`crop()` can be used on all Raster and all Spatial objects to an extent object or any object from which an Extent object can be derived.
+*Both objects must be in an identical projection*
+
+## Masking
+
+*Note!* that our crop from above didn't result in a raster that follows the irregular outlines of the vector file. 
+
+To get an irregular raster following the vector, you would use `raster::mask()`. This command keeps the raster values inside a selection, sets everything else to NA, but does not touch the extent of a raster.
+
+```{r}
+L52011_maskPA <- mask(L52011, parakan)
+plotRGB(L52011_maskPA, r = 3, g = 2, b = 1, stretch = "lin")
+```
+
+If you want to crop your raster to a single PA **AND** mask all values that are outside the PA, you need to combine both functions:
+
+```{r}
+L52011_cropmaskPA <- mask(crop(L52011, parakan), parakan)
+plotRGB(L52011_cropmaskPA, r = 3, g = 2, b = 1, stretch = "lin")
+```
+
+# Raster Arithmetic
+
+Because rasters are just matrices, performing artithmetic on them is pretty intuitive. The raster package provides most arithemtic operations such as `+`, `-`, `*`, and `/`.
+
+Raster arithmetic is best thought of as a per-pixel basis. So if you add two rasters, each pixel in raster A corresponds to a pixel in raster B, and if you sum them up, they will be stored in a new raster with the same dimensions:
+
+```{r}
+b1b2sum <- L52011[[1]]+L52011[[2]]
+```
+To create a new raster that holds the sum of all pixels in a RasterStack:
+```{r}
+totalSum <- sum(L52011)
+```
+
+##Pixel by Pixel Raster Arithmetic
+
+The main command for performing calculations with rasters is `raster::calc()`. This allows you to take any function (including your own!) that can operate on a vector of values, feed it single pixel values and return the results in the form of one or more raster layers.
+
+For example, we can use `calc()` to calculate the pixelwise standard deviation:
+
+```{r}
+L52011_sd <- calc(L52011, fun = sd, na.rm = TRUE)
+L52011_sd
+```
+But again, what is cool about this is that we can provide our own functions:
+```{r}
+L52011_myFun <- calc(L52011, fun = function(x) {2*x + 0.5*x^2-10})
+```
+
+##Layer by Layer Arithmetic
+To provide your own function to perform raster arithmetic between two layers, you can use the `raster::overlay` command which allows us to use two or more layers and execute our predfined function.
+
+```{r}
+# define our function
+my.ndvi <- function(nir,red) {
+  (nir-red)/(nir+red)
+}
+# apply ndvi function to our image and write to file (so we don't hold it in temp memory:
+L52011.ndvi <- overlay(L52011$LT52240632011210CUB01_B4,L52011$LT52240632011210CUB01_B3, fun = my.ndvi)
+```
+
+Now you can calculate NDVI (or any other index) for many datasets without having to enter the forumla again and again and again.
+
+##Summarizing Layers
+For a summary of each layer's values we use `summary()` on a Raster object. Note if you have a large raster object, this function will only work on a random sample of pixels from the whole raster:
+```{r}
+summary(L52011)
+```
+
+To calculate the true value including all pixels we use `raster::cellStats()`. It is similar to `calc()`, allowing you to specific a statistical summary function calculated on a per-layer basis. 
+
+So, the calculate the sd of all pixel values per layer:
+```{r}
+cellStats(L52011, stat = "sd", na.rm = TRUE)
+```Show in New WindowClear OutputExpand/Collapse Output
+LT52240632011210CUB01_B1 LT52240632011210CUB01_B2 
+                3.872975                 3.729198 
+LT52240632011210CUB01_B3 LT52240632011210CUB01_B4 
+                5.602168                25.088235 
+LT52240632011210CUB01_B5 LT52240632011210CUB01_B6 
+               23.819177                 2.945487 
+LT52240632011210CUB01_B7 
+```
+><span style="color:CRIMSON;">15. Calculate the mean and sd of NDVI versus EVI for the Parakana Protected Area calculated from the L52011 Landsat scene. Provide your results and your code.</span>
+
+><span style="color:CRIMSON;">16. Challenge Question! Can you provide a box plot visualizing the difference in values of NDVI and EVI for Parakana PA? Provide your plot and show your code.</span>
+
+><span style="color:CRIMSON;">17. Challenge Question! How would you quantitiatively compare NDVI versus EVI (with a statistical test?). Provide your results and show your code.</span>
+
