@@ -1,6 +1,6 @@
 ---
 title: 'Lab 3: Using what we Learned and Debugging'
-author: "ES_____"
+author: "Erin Hestir, Christiana Ade, and Erik Bolch"
 date: 
 output:
   html_document:
@@ -19,11 +19,11 @@ output:
 We have learned the basics of R data types and we are starting to become familiar with R syntax. Now, we are going to delve a little deeper into programming with R. We are going to learn how to write functions and how to write loops. 
 
 # Synthesis Questions
-><span style="color:CRIMSON;">1. Use `str()` to compare the results of using `list()` and c`()` on `l` and `j` for: `l <-c(list(1,2),c(3,4))` and `j=list(list(1,2),c(3,4))` </span> 
+><span style="color:CRIMSON;">1. What is vectorization and what are the trade-offs between using loops and vectorized solutions? </span> 
 
-><span style="color:CRIMSON;">2. Use `str()` to compare the results of using `list()` and c`()` on `l` and `j` for: `l <-c(list(1,2),c(3,4))` and `j=list(list(1,2),c(3,4))` </span> 
+><span style="color:CRIMSON;">2.  </span> 
 
-><span style="color:CRIMSON;">3. Use `str()` to compare the results of using `list()` and c`()` on `l` and `j` for: `l <-c(list(1,2),c(3,4))` and `j=list(list(1,2),c(3,4))` </span> 
+><span style="color:CRIMSON;">3.  </span> 
 
 ###Packages to install
 
@@ -40,10 +40,6 @@ pkgTest <- function(...) {
 # Load dependencies and setup environment
 pkgTest("ggplot2", "nlme", "MASS")
 ```
-
-
-
-
 # Using what was learned
 
 ## Debugging
@@ -462,27 +458,16 @@ str(results[succeeded])
 str(elements[!succeeded])
 ```
 You can clearly see the fourth element of the list was the source of the error becaues it's characters and the function cannot be performed on them.
+
 ### tryCatch()
-tryCatch() is a general tool for handling conditions: in addition to errors, you can take different actions for warnings, messages, and interrupts. One other great feature of tryCatch() is that it has the argument: finally. It specifies a block of code (not a function) to run regardless of whether the initial expression succeeds or fails. This can be useful for clean up (e.g., deleting files, closing connections). This is functionally equivalent to using on.exit() but it can wrap smaller chunks of code than an entire function.
-```{r}
 
+tryCatch() is a general tool for handling conditions: in addition to errors, you can take different actions for warnings, messages, and interrupts. You’ve seen errors (made by stop()), warnings (warning()) and messages (message()) before, but interrupts are new. They can’t be generated directly by the programmer, but are raised when the user attempts to terminate execution by pressing Ctrl + Break, Escape, or Ctrl + C (depending on the platform).
 
-```
+With tryCatch() you map conditions to handlers, named functions that are called with the condition as an input. If a condition is signalled, tryCatch() will call the first handler whose name matches one of the classes of the condition. The only useful built-in names are error, warning, message, interrupt, and the catch-all condition. A handler function can do anything, but typically it will either return a value or create a more informative error message.
 
-```{r}
+tryCatch() has one other argument: finally. It specifies a block of code (not a function) to run regardless of whether the initial expression succeeds or fails. This can be useful for clean up (e.g., deleting files, closing connections). This is functionally equivalent to using on.exit() but it can wrap smaller chunks of code than an entire function.
 
-
-```
-
-```{r}
-
-
-```
-
-```{r}
-
-
-```
+><span style="color:CRIMSON;"> 9. Explain the difference between try() and trycatch(), and why this is useful.</span>
 
 # Remote Sensing Functions
 The remainder of this assignment will require reading in these 5 files. They are were taken from the USGS Base Spectral Library Version 7:https://speclab.cr.usgs.gov/spectral-lib.html
