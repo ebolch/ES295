@@ -20,10 +20,19 @@ This document includes information regarding the changes to Erin Hestirs introdu
 * Other comments will be in black.
 * The color of the issues or questions will be turned to black when they are answered or addressed. Along with the any relevant information regarding the correction. 
 
-## Overall comments and concerns
+## Overall comments for final lab revisions
 
 * Check to see if the formatting is the same across all labs.`
 * Might want to make sure eval = F for all blocks that have ?. That way when we knit this does not open all the pages.
+* Double check that all authors, course number and name are updated for fall 2018. 
+* Table of contents updates for all labs 
+* If possible, make a document that has table of content for all labs in one. 
+* Possible project file for the whole semester?
+
+## General to-do list
+
+*Datasets determined*
+* Download landsat time series in --- what is the correct zone? 
 
 ## Lab 1:
 
@@ -52,6 +61,7 @@ Main Editor: cade
 Change | Date | Author
 ------------- | ------------- | -------------
 Added Remote Sensing Functions, Looping vs. Vectorized solution, Vegetation Indices, Debug a function (Separability Index),  Make a publication quality figure | 3/25/2018 | cade
+Changed the ggplot section | 4/9/2018 | cade
 
 
 
@@ -77,3 +87,37 @@ Added Remote Sensing Functions, Looping vs. Vectorized solution, Vegetation Indi
 ## Lab 4: 
 Main Editor: cade
 
+**Changes**
+
+Change | Date | Author
+------------- | ------------- | -------------
+none | 3/27/2018 | cade
+
+
+
+**Comments**
+
+* This lab is Lab 4 from Erin's MEA class. As of 3/27/2018, no updates have been made. 
+* Should include CRSidentical example and changing of projection
+* Memory limitations 
+* Lab 5 was originally supposed to be import/export and benchmarking. Unsure of how this differs greatly from lab 4. 
+
+><span style="color:BLUE;">1. Cade, 3/27/2018:  Do we want to keep QGIS section and earth explorer? </span>
+
+><span style="color:CRIMSON;">2. Cade, 3/27/2018:  Currently missing the lab 4 zipfiles, are we updating this to whatever time series we are using from landsat? -- Erin address this please </span>
+
+
+## Lab 5: 
+Main Editor: cade
+
+**Changes**
+
+Change | Date | Author
+------------- | ------------- | -------------
+none | 3/27/2018 | cade
+
+
+
+**Comments**
+
+* Beginning of this lab should include an issue with projection...
