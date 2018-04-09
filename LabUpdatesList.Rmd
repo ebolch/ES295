@@ -103,8 +103,13 @@ none | 3/27/2018 | cade
 * Lab 5 was originally supposed to be import/export and benchmarking. Unsure of how this differs greatly from lab 4. 
 
 ><span style="color:BLUE;">1. Cade, 3/27/2018:  Do we want to keep QGIS section and earth explorer? </span>
+- Answer : YES 
 
-><span style="color:CRIMSON;">2. Cade, 3/27/2018:  Currently missing the lab 4 zipfiles, are we updating this to whatever time series we are using from landsat? -- Erin address this please </span>
+><span style="color:BLUE;">2. Cade, 4/9/2018: For the earth explorer section, do we want them to both manually download it and use R to download? That is a lot of images.  </span>
+
+><span style="color:BLUE;">3. Cade, 4/9/2018: What was study area again?  </span>
+
+><span style="color:CRIMSON;">4. Cade, 3/27/2018:  Currently missing the lab 4 zipfiles, are we updating this to whatever time series we are using from landsat? -- Erin address this please </span>
 
 
 ## Lab 5: 
