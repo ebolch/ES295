@@ -505,7 +505,6 @@ MCARI (Modified Chlorophyll Absorption Ratio Index)  | $$ \frac{(p850−P730)−
 
 
 ## Debug a function (Separability Index) 
-><span style="color:CRIMSON;">12. Debug the following function and use a vectorize solution to the spectral profiles .</span>
 
 We can determine rough estimates of how separable two classes are based on their
 spectral properties. Low separability means two classes are very similar spectrally and may not
@@ -515,15 +514,32 @@ sometimes called the M-Statistic
 
 M= (A – B) / (sa + sb)
 
-```{r}
+><span style="color:CRIMSON;">12. Debug the following function and use a vectorize solution to the spectral profiles .</span>
 
+
+```{r}
+mStat <- function(band1,band2){
+  A <- mean(band1)
+  B <- mean(band2)
+  sa <- sd(band1)
+  sb <- sd(band2)
+  M <- (A - B) / (sa + sb)}
 ```
 
 
 
 ## Make a publication quality figure
 
-><span style="color:CRIMSON;">13. Use ggplot to make a publication quality figure that has all 5 vegetation spectra on a single plot. Color each spectrum separately and include a legend. Save your plot as a png and upload it to catcourses. If you are unsure of the requirements for a publication quality figure, review the requirements for publishing in Remote Sensing of the Environment. </span>
+While base R does have some plotting functions, such as ```plot()```, these are very basic and most researchers do not actually use them for creating publication quality figures (they might use them as a quick visualization tool). Instead, they use ggplot which is much more customizable. Although, this package for plotting allows for more custom plotting, it is a bit complicated and it does not follow the typical R syntax. Look through the cookbook for R to see some different plots (http://www.cookbook-r.com/Graphs/).
+
+The following code plots all five spectra on a single plot
+
+><span style="color:CRIMSON;">14. Use ggplot to make a single publication quality figure that has all 5 vegetation spectra in their own gridded plot (Hint: use facet, http://www.cookbook-r.com/Graphs/Facets_(ggplot2)/). Color each spectrum separately and include a legend. Save your plot as a png and upload it to catcourses. </span>
+
+
+><span style="color:CRIMSON;">15. Plot individual plots using a vectorize solution. 
+
+
 
 
 
