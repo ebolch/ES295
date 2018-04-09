@@ -538,6 +538,8 @@ M= (A – B) / (sa + sb)
 
 ## Make a publication quality figure
 
+While base R does have some plotting functions, such as ```plot()```, these are very basic and most researchers do not actually use them for creating publication quality figures (they might use them as a quick visualization tool). Instead, they use ggplot which is much more customizable. Although, this package for plotting allows for more custom plotting, it is a bit complicated and it does not follow the typical R syntax. Look through the cookbook for R to see some different plots (http://www.cookbook-r.com/Graphs/). 
+
 ><span style="color:CRIMSON;">13. Use ggplot to make a publication quality figure that has all 5 vegetation spectra on a single plot. Color each spectrum separately and include a legend. Save your plot as a png and upload it to catcourses. If you are unsure of the requirements for a publication quality figure, review the requirements for publishing in Remote Sensing of the Environment. </span>
 
 
